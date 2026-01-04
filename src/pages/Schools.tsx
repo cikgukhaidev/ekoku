@@ -1,18 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { School, Plus, Users, MoreVertical, Trash2, Edit, Calendar } from 'lucide-react';
+import { School, Plus, Users, Trash2, Edit, Image } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { SearchBar } from '@/components/ui/search-bar';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -195,102 +196,97 @@ const Schools = () => {
             </p>
           </motion.div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSchools.map((school, index) => (
-              <motion.div
-                key={school.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
-                  <CardContent className="p-0">
-                    {/* Header with logo */}
-                    <div className="p-4 border-b border-border bg-accent/30">
-                      <div className="flex items-start gap-4">
-                        {/* Logo */}
-                        <div className="w-16 h-16 rounded-xl bg-background flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm border border-border">
-                          {school.logo_url ? (
-                            <img
-                              src={school.logo_url}
-                              alt={school.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <School className="w-8 h-8 text-muted-foreground" />
-                          )}
-                        </div>
-
-                        {/* Name & Actions */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-base leading-tight line-clamp-2">
-                            {school.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            <Calendar className="w-3 h-3 inline mr-1" />
-                            {new Date(school.created_at).toLocaleDateString('ms-MY', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
-                          </p>
-                        </div>
-
-                        {/* Menu */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/schools/${school.id}/edit`)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit Sekolah
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => setDeleteId(school.id)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Padam
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg border border-border overflow-hidden"
+          >
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="w-12">#</TableHead>
+                  <TableHead className="w-16">Logo</TableHead>
+                  <TableHead>Nama Sekolah</TableHead>
+                  <TableHead className="hidden sm:table-cell text-center">Ketua</TableHead>
+                  <TableHead className="hidden sm:table-cell text-center">Guru</TableHead>
+                  <TableHead className="hidden lg:table-cell">Tarikh Daftar</TableHead>
+                  <TableHead className="text-right">Tindakan</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSchools.map((school, index) => (
+                  <TableRow key={school.id} className="hover:bg-muted/30">
+                    <TableCell className="font-medium text-muted-foreground">
+                      {index + 1}
+                    </TableCell>
+                    <TableCell>
+                      <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center overflow-hidden border border-border">
+                        {school.logo_url ? (
+                          <img
+                            src={school.logo_url}
+                            alt={school.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Image className="w-5 h-5 text-muted-foreground" />
+                        )}
                       </div>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="p-4 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="gap-1">
-                          <Users className="w-3 h-3" />
-                          {school.head_count} Ketua
-                        </Badge>
-                        <Badge variant="outline" className="gap-1">
-                          <Users className="w-3 h-3" />
-                          {school.teacher_count} Guru
-                        </Badge>
-                      </div>
-
-                      {/* Quick Actions */}
-                      <div className="flex gap-2">
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-medium">{school.name}</p>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-center">
+                      <Badge variant="secondary" className="gap-1">
+                        <Users className="w-3 h-3" />
+                        {school.head_count}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-center">
+                      <Badge variant="outline" className="gap-1">
+                        <Users className="w-3 h-3" />
+                        {school.teacher_count}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">
+                      {new Date(school.created_at).toLocaleDateString('ms-MY', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          className="flex-1 text-xs"
                           onClick={() => navigate(`/schools/${school.id}/heads`)}
+                          className="text-xs"
                         >
-                          <Users className="w-3 h-3 mr-1" />
-                          Urus Ketua
+                          <Users className="w-4 h-4 mr-1" />
+                          <span className="hidden md:inline">Ketua</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/schools/${school.id}/edit`)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setDeleteId(school.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </motion.div>
         )}
       </div>
 
