@@ -7,9 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth';
+
+const CATEGORIES = [
+  { value: 'sukan_permainan', label: 'Sukan Dan Permainan' },
+  { value: 'unit_uniform', label: 'Unit Uniform' },
+  { value: 'persatuan_kelab', label: 'Persatuan Dan Kelab' },
+] as const;
 
 const AddTeacher = () => {
   const navigate = useNavigate();
@@ -21,6 +34,7 @@ const AddTeacher = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [category, setCategory] = useState('');
   const [unitName, setUnitName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -84,6 +98,24 @@ const AddTeacher = () => {
       return;
     }
 
+    if (!category) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Sila pilih kategori kokurikulum',
+      });
+      return;
+    }
+
+    if (!unitName.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Sila masukkan nama unit',
+      });
+      return;
+    }
+
     if (!schoolId) {
       toast({
         variant: 'destructive',
@@ -103,7 +135,8 @@ const AddTeacher = () => {
           fullName: fullName.trim(),
           schoolId,
           role: 'guru',
-          unitName: unitName.trim() || null,
+          unitName: unitName.trim(),
+          kokurikulumCategory: category,
         },
       });
 
@@ -190,14 +223,33 @@ const AddTeacher = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="unitName">Nama Unit Kokurikulum</Label>
+                  <Label htmlFor="category">Kategori Kokurikulum</Label>
+                  <Select value={category} onValueChange={setCategory} disabled={loading}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih kategori" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="unitName">Nama Unit</Label>
                   <Input
                     id="unitName"
-                    placeholder="Contoh: Pengakap, Kadet Remaja Sekolah"
+                    placeholder="Contoh: Pengakap, Bola Sepak, Kelab Komputer"
                     value={unitName}
                     onChange={(e) => setUnitName(e.target.value)}
                     disabled={loading}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Nama unit kokurikulum yang dikendalikan guru ini
+                  </p>
                 </div>
 
                 <div className="space-y-2">

@@ -187,6 +187,9 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean | null
+          kokurikulum_category:
+            | Database["public"]["Enums"]["kokurikulum_category"]
+            | null
           must_change_password: boolean | null
           school_id: string | null
           unit_name: string | null
@@ -200,6 +203,9 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean | null
+          kokurikulum_category?:
+            | Database["public"]["Enums"]["kokurikulum_category"]
+            | null
           must_change_password?: boolean | null
           school_id?: string | null
           unit_name?: string | null
@@ -213,6 +219,9 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean | null
+          kokurikulum_category?:
+            | Database["public"]["Enums"]["kokurikulum_category"]
+            | null
           must_change_password?: boolean | null
           school_id?: string | null
           unit_name?: string | null
@@ -359,6 +368,10 @@ export type Database = {
     Enums: {
       app_role: "superadmin" | "ketua_penasihat" | "guru"
       attendance_status: "hadir" | "tidak_hadir" | "lewat"
+      kokurikulum_category:
+        | "sukan_permainan"
+        | "unit_uniform"
+        | "persatuan_kelab"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -488,6 +501,11 @@ export const Constants = {
     Enums: {
       app_role: ["superadmin", "ketua_penasihat", "guru"],
       attendance_status: ["hadir", "tidak_hadir", "lewat"],
+      kokurikulum_category: [
+        "sukan_permainan",
+        "unit_uniform",
+        "persatuan_kelab",
+      ],
     },
   },
 } as const

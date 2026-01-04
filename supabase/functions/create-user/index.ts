@@ -28,7 +28,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     
     // Parse request body first
-    const { email, password, fullName, schoolId, role, unitName } = await req.json();
+    const { email, password, fullName, schoolId, role, unitName, kokurikulumCategory } = await req.json();
 
     // Validate inputs
     if (!email || !password || !fullName || !schoolId || !role) {
@@ -104,13 +104,14 @@ serve(async (req) => {
       );
     }
 
-    // Update profile with school_id and unit_name
+    // Update profile with school_id, unit_name, and category
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .update({
         school_id: schoolId,
         full_name: fullName,
         unit_name: unitName || null,
+        kokurikulum_category: kokurikulumCategory || null,
         must_change_password: true,
       })
       .eq("user_id", newUser.user.id);
