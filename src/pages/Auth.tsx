@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, LogIn, Lock, Mail, GraduationCap } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Lock, Mail, GraduationCap, Play, User, UserCheck } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -14,16 +22,64 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Kata laluan mestilah sekurang-kurangnya 6 aksara'),
 });
 
+const demoAccounts = [
+  { 
+    email: 'ketua@demo.com', 
+    role: 'Ketua Penasihat',
+    description: 'Urus guru, tetapan sekolah & pengumuman',
+    icon: <UserCheck className="w-5 h-5" />
+  },
+  { 
+    email: 'guru1@demo.com', 
+    role: 'Guru (Sukan & Permainan)',
+    description: 'Unit: Bola Sepak',
+    icon: <User className="w-5 h-5" />
+  },
+  { 
+    email: 'guru3@demo.com', 
+    role: 'Guru (Unit Uniform)',
+    description: 'Unit: Pengakap',
+    icon: <User className="w-5 h-5" />
+  },
+  { 
+    email: 'guru5@demo.com', 
+    role: 'Guru (Persatuan & Kelab)',
+    description: 'Unit: Kelab Sains',
+    icon: <User className="w-5 h-5" />
+  },
+];
+
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [showDemoDialog, setShowDemoDialog] = useState(false);
+  const [demoLoading, setDemoLoading] = useState<string | null>(null);
   
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleDemoLogin = async (demoEmail: string) => {
+    setDemoLoading(demoEmail);
+    try {
+      const { error } = await signIn(demoEmail, 'demo123');
+      if (error) {
+        sonnerToast.error('Gagal log masuk demo. Sila cuba lagi.');
+        console.error('Demo login error:', error);
+      } else {
+        sonnerToast.success('Selamat datang ke mod demo!');
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      sonnerToast.error('Ralat semasa log masuk demo');
+      console.error(err);
+    } finally {
+      setDemoLoading(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,8 +232,66 @@ const Auth = () => {
                   </span>
                 )}
               </Button>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">atau</span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12"
+                onClick={() => setShowDemoDialog(true)}
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Cuba Demo
+              </Button>
             </form>
           </div>
+
+          {/* Demo Dialog */}
+          <Dialog open={showDemoDialog} onOpenChange={setShowDemoDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Play className="w-5 h-5 text-primary" />
+                  Cuba Demo
+                </DialogTitle>
+                <DialogDescription>
+                  Pilih peranan untuk mencuba sistem. Data akan reset setiap 24 jam.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 mt-4">
+                {demoAccounts.map((account) => (
+                  <button
+                    key={account.email}
+                    onClick={() => handleDemoLogin(account.email)}
+                    disabled={demoLoading !== null}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors text-left disabled:opacity-50"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                      {account.icon}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{account.role}</p>
+                      <p className="text-sm text-muted-foreground">{account.description}</p>
+                    </div>
+                    {demoLoading === account.email && (
+                      <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground text-center mt-4">
+                Password: demo123 | Sekolah: SK DEMO LOVABLE
+              </p>
+            </DialogContent>
+          </Dialog>
 
           <motion.div
             initial={{ opacity: 0 }}
