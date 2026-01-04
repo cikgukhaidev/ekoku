@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { resizeImage, formatFileSize } from '@/lib/imageUtils';
+import { logActivity } from '@/lib/activityLogger';
 
 const AddSchool = () => {
   const navigate = useNavigate();
@@ -101,12 +102,21 @@ const AddSchool = () => {
       }
 
       // Insert school with uppercase name
-      const { error } = await supabase.from('schools').insert({
+      const { data: newSchool, error } = await supabase.from('schools').insert({
         name: schoolName.trim().toUpperCase(),
         logo_url: logoUrl,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Log activity
+      await logActivity({
+        actionType: 'create',
+        entityType: 'settings',
+        entityId: newSchool?.id,
+        description: `Menambah sekolah baru: ${schoolName.trim().toUpperCase()}`,
+        details: { school_name: schoolName.trim().toUpperCase(), has_logo: !!logoUrl },
+      });
 
       toast({
         title: 'Berjaya',
@@ -115,6 +125,14 @@ const AddSchool = () => {
 
       navigate('/schools');
     } catch (error: any) {
+      // Log error
+      await logActivity({
+        actionType: 'error',
+        entityType: 'settings',
+        description: `Gagal menambah sekolah: ${schoolName.trim()}`,
+        errorMessage: error.message,
+      });
+
       toast({
         variant: 'destructive',
         title: 'Ralat',
