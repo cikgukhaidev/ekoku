@@ -901,33 +901,68 @@ const Students = () => {
           <DialogHeader>
             <DialogTitle>Import Pelajar</DialogTitle>
             <DialogDescription>
-              Muat naik fail CSV untuk menambah pelajar secara pukal
+              Muat turun contoh, isi dalam Excel, kemudian import balik
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-              <FileUp className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground mb-3">
-                Format CSV: Nama Penuh, Tingkatan, Kelas
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleImportStudents}
-                className="hidden"
-                id="csv-upload"
-              />
-              <Button asChild variant="outline">
-                <label htmlFor="csv-upload" className="cursor-pointer">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Pilih Fail CSV
-                </label>
+            {/* Step 1: Download Template */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Langkah 1: Muat turun contoh</p>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  const csvHeader = 'Nama Penuh,Tingkatan,Kelas';
+                  const csvExample = [
+                    '"ALI BIN ABU",1,"ZUHAL"',
+                    '"SITI BINTI AHMAD",1,"ZUHAL"',
+                    '"MUHAMMAD BIN HASSAN",2,"MARIKH"',
+                  ].join('\n');
+                  const csvContent = `${csvHeader}\n${csvExample}`;
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = 'contoh_senarai_pelajar.csv';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                  toast({
+                    title: 'Berjaya',
+                    description: 'Contoh fail CSV dimuat turun. Buka dengan Excel untuk edit.',
+                  });
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Muat Turun Contoh (CSV)
               </Button>
+              <p className="text-xs text-muted-foreground">
+                Fail CSV boleh dibuka dan diedit dalam Microsoft Excel
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Contoh baris: "ALI BIN ABU",3,"BESTARI"
-            </p>
+
+            {/* Step 2: Upload */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Langkah 2: Import fail yang telah diisi</p>
+              <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                <FileUp className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleImportStudents}
+                  className="hidden"
+                  id="csv-upload"
+                />
+                <Button asChild variant="outline" size="sm">
+                  <label htmlFor="csv-upload" className="cursor-pointer">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Pilih Fail CSV
+                  </label>
+                </Button>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
