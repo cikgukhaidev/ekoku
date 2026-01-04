@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { School, Plus, Users, MoreVertical, Trash2, Edit, Calendar, Megaphone } from 'lucide-react';
+import { School, Plus, Users, MoreVertical, Trash2, Edit, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SearchBar } from '@/components/ui/search-bar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,7 @@ const Schools = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [schools, setSchools] = useState<SchoolData[]>([]);
+  const [filteredSchools, setFilteredSchools] = useState<SchoolData[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -85,11 +87,16 @@ const Schools = () => {
     );
 
     setSchools(schoolsWithCounts);
+    setFilteredSchools(schoolsWithCounts);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchSchools();
+  }, []);
+
+  const handleFilteredData = useCallback((filtered: SchoolData[]) => {
+    setFilteredSchools(filtered);
   }, []);
 
   const handleDelete = async () => {
@@ -138,7 +145,23 @@ const Schools = () => {
         </motion.div>
       </div>
 
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6 space-y-4">
+        {/* Search Bar */}
+        {!loading && schools.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <SearchBar<SchoolData>
+              data={schools}
+              searchKey="name"
+              onFilteredData={handleFilteredData}
+              placeholder="Cari sekolah..."
+            />
+          </motion.div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
@@ -159,9 +182,21 @@ const Schools = () => {
               Tambah Sekolah
             </Button>
           </motion.div>
+        ) : filteredSchools.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-12"
+          >
+            <School className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-semibold text-lg">Tiada hasil carian</h3>
+            <p className="text-muted-foreground text-sm mt-1">
+              Cuba cari dengan kata kunci lain
+            </p>
+          </motion.div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {schools.map((school, index) => (
+            {filteredSchools.map((school, index) => (
               <motion.div
                 key={school.id}
                 initial={{ opacity: 0, y: 20 }}
