@@ -12,43 +12,28 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 
-interface ClassItem {
-  form_level: number;
-  class_name: string;
-}
-
 const Settings = () => {
   const { user, profile, role, markPasswordChanged } = useAuth();
   const { toast } = useToast();
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
   const [totalMeetings, setTotalMeetings] = useState(12);
-  const [classStructure, setClassStructure] = useState<ClassItem[]>([]);
-  const [newClass, setNewClass] = useState({ form_level: '1', class_name: '' });
+  const [classNames, setClassNames] = useState<string[]>([]);
+  const [newClassName, setNewClassName] = useState('');
 
   useEffect(() => {
     const fetchSettings = async () => {
       if (!user?.id) return;
       
-      // Fetch ketua_penasihat settings
       if (role === 'ketua_penasihat') {
         const { data } = await supabase
           .from('teacher_settings')
@@ -59,7 +44,20 @@ const Settings = () => {
         if (data) {
           setTotalMeetings(data.total_meetings ?? 12);
           if (data.class_structure && Array.isArray(data.class_structure)) {
-            setClassStructure(data.class_structure as unknown as ClassItem[]);
+            // Handle both old format (with form_level) and new format (just strings)
+            const classes = data.class_structure as any[];
+            if (classes.length > 0 && typeof classes[0] === 'string') {
+              setClassNames(classes as string[]);
+            } else if (classes.length > 0 && typeof classes[0] === 'object') {
+              // Convert old format to new - extract unique class names in order
+              const uniqueNames: string[] = [];
+              classes.forEach((c: any) => {
+                if (c.class_name && !uniqueNames.includes(c.class_name)) {
+                  uniqueNames.push(c.class_name);
+                }
+              });
+              setClassNames(uniqueNames);
+            }
           }
         }
       }
@@ -100,7 +98,6 @@ const Settings = () => {
         description: 'Gagal menukar kata laluan',
       });
     } else {
-      // Update must_change_password flag
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ must_change_password: false })
@@ -115,7 +112,6 @@ const Settings = () => {
         description: 'Kata laluan berjaya ditukar',
       });
       setPasswordForm({
-        currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       });
@@ -127,7 +123,6 @@ const Settings = () => {
   const handleSaveMeetings = async () => {
     if (!user?.id) return;
 
-    // Check if record already exists
     const { data: existing } = await supabase
       .from('teacher_settings')
       .select('id')
@@ -136,14 +131,12 @@ const Settings = () => {
 
     let error;
     if (existing) {
-      // Update existing record
       const result = await supabase
         .from('teacher_settings')
         .update({ total_meetings: totalMeetings })
         .eq('user_id', user.id);
       error = result.error;
     } else {
-      // Insert new record
       const result = await supabase
         .from('teacher_settings')
         .insert({ user_id: user.id, total_meetings: totalMeetings });
@@ -151,7 +144,6 @@ const Settings = () => {
     }
 
     if (error) {
-      console.error('Error saving meetings:', error);
       toast({
         variant: 'destructive',
         title: 'Ralat',
@@ -166,7 +158,8 @@ const Settings = () => {
   };
 
   const handleAddClass = () => {
-    if (!newClass.class_name.trim()) {
+    const trimmed = newClassName.trim();
+    if (!trimmed) {
       toast({
         variant: 'destructive',
         title: 'Ralat',
@@ -175,12 +168,7 @@ const Settings = () => {
       return;
     }
 
-    const exists = classStructure.some(
-      c => c.form_level === parseInt(newClass.form_level) && 
-           c.class_name.toLowerCase() === newClass.class_name.toLowerCase()
-    );
-
-    if (exists) {
+    if (classNames.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
       toast({
         variant: 'destructive',
         title: 'Ralat',
@@ -189,24 +177,21 @@ const Settings = () => {
       return;
     }
 
-    setClassStructure([
-      ...classStructure,
-      { form_level: parseInt(newClass.form_level), class_name: newClass.class_name.trim() }
-    ]);
-    setNewClass({ form_level: newClass.form_level, class_name: '' });
+    setClassNames([...classNames, trimmed]);
+    setNewClassName('');
   };
 
   const handleRemoveClass = (index: number) => {
-    setClassStructure(classStructure.filter((_, i) => i !== index));
+    setClassNames(classNames.filter((_, i) => i !== index));
   };
 
   const handleMoveClass = (index: number, direction: 'up' | 'down') => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= classStructure.length) return;
+    if (newIndex < 0 || newIndex >= classNames.length) return;
     
-    const newStructure = [...classStructure];
-    [newStructure[index], newStructure[newIndex]] = [newStructure[newIndex], newStructure[index]];
-    setClassStructure(newStructure);
+    const newList = [...classNames];
+    [newList[index], newList[newIndex]] = [newList[newIndex], newList[index]];
+    setClassNames(newList);
   };
 
   const handleSaveClassStructure = async () => {
@@ -222,18 +207,17 @@ const Settings = () => {
     if (existing) {
       const result = await supabase
         .from('teacher_settings')
-        .update({ class_structure: JSON.parse(JSON.stringify(classStructure)) })
+        .update({ class_structure: classNames })
         .eq('user_id', user.id);
       error = result.error;
     } else {
       const result = await supabase
         .from('teacher_settings')
-        .insert([{ user_id: user.id, class_structure: JSON.parse(JSON.stringify(classStructure)) }]);
+        .insert([{ user_id: user.id, class_structure: classNames }]);
       error = result.error;
     }
 
     if (error) {
-      console.error('Error saving class structure:', error);
       toast({
         variant: 'destructive',
         title: 'Ralat',
@@ -246,13 +230,6 @@ const Settings = () => {
       });
     }
   };
-
-  // Group classes by form level for display
-  const groupedClasses = classStructure.reduce((acc, item) => {
-    if (!acc[item.form_level]) acc[item.form_level] = [];
-    acc[item.form_level].push(item.class_name);
-    return acc;
-  }, {} as Record<number, string[]>);
 
   const renderPasswordSection = () => (
     <Card>
@@ -353,34 +330,20 @@ const Settings = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <GraduationCap className="w-5 h-5 text-primary" />
-          Struktur Kelas
+          Susunan Kelas
         </CardTitle>
         <CardDescription>
-          Tetapkan senarai kelas mengikut tingkatan dan susunan untuk semua guru
+          Tetapkan senarai nama kelas mengikut susunan. Susunan ini akan digunakan untuk semua tingkatan.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Add new class */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Select
-            value={newClass.form_level}
-            onValueChange={(val) => setNewClass({ ...newClass, form_level: val })}
-          >
-            <SelectTrigger className="w-full sm:w-32">
-              <SelectValue placeholder="Tingkatan" />
-            </SelectTrigger>
-            <SelectContent>
-              {[1, 2, 3, 4, 5].map((num) => (
-                <SelectItem key={num} value={num.toString()}>
-                  Tingkatan {num}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex gap-3">
           <Input
-            placeholder="Nama kelas (cth: Bestari)"
-            value={newClass.class_name}
-            onChange={(e) => setNewClass({ ...newClass, class_name: e.target.value })}
+            placeholder="Nama kelas (cth: Zuhal)"
+            value={newClassName}
+            onChange={(e) => setNewClassName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddClass()}
             className="flex-1"
           />
           <Button onClick={handleAddClass} size="icon">
@@ -388,70 +351,58 @@ const Settings = () => {
           </Button>
         </div>
 
-        {/* Display classes grouped by form level */}
-        {classStructure.length > 0 ? (
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((formLevel) => {
-              const classesForForm = classStructure
-                .map((c, idx) => ({ ...c, originalIndex: idx }))
-                .filter(c => c.form_level === formLevel);
-              
-              if (classesForForm.length === 0) return null;
-              
-              return (
-                <div key={formLevel} className="space-y-2">
-                  <Label className="text-sm font-medium">Tingkatan {formLevel}</Label>
-                  <div className="space-y-1">
-                    {classesForForm.map((classItem, idx) => (
-                      <div
-                        key={classItem.originalIndex}
-                        className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg"
-                      >
-                        <GripVertical className="w-4 h-4 text-muted-foreground" />
-                        <span className="flex-1 text-sm">{classItem.class_name}</span>
-                        <span className="text-xs text-muted-foreground">#{idx + 1}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleMoveClass(classItem.originalIndex, 'up')}
-                          disabled={idx === 0}
-                        >
-                          ↑
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleMoveClass(classItem.originalIndex, 'down')}
-                          disabled={idx === classesForForm.length - 1}
-                        >
-                          ↓
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => handleRemoveClass(classItem.originalIndex)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+        {/* Display classes */}
+        {classNames.length > 0 ? (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Senarai Kelas (mengikut susunan)</Label>
+            <div className="space-y-1">
+              {classNames.map((className, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg"
+                >
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  <span className="flex-1 text-sm font-medium">{className}</span>
+                  <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded">#{idx + 1}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleMoveClass(idx, 'up')}
+                    disabled={idx === 0}
+                  >
+                    ↑
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleMoveClass(idx, 'down')}
+                    disabled={idx === classNames.length - 1}
+                  >
+                    ↓
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={() => handleRemoveClass(idx)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Tiada kelas ditambah. Tambah kelas untuk mula.
+            Tiada kelas ditambah. Contoh: Zuhal, Utarid, Bumi
           </p>
         )}
 
-        <Button onClick={handleSaveClassStructure} disabled={classStructure.length === 0}>
+        <Button onClick={handleSaveClassStructure} disabled={classNames.length === 0}>
           <Save className="w-4 h-4 mr-2" />
-          Simpan Struktur Kelas
+          Simpan Susunan Kelas
         </Button>
       </CardContent>
     </Card>
@@ -527,7 +478,7 @@ const Settings = () => {
                 </TabsTrigger>
                 <TabsTrigger value="classes" className="text-xs sm:text-sm">
                   <GraduationCap className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Struktur Kelas</span>
+                  <span className="hidden sm:inline">Susunan Kelas</span>
                   <span className="sm:hidden">Kelas</span>
                 </TabsTrigger>
               </TabsList>
