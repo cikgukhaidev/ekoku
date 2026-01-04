@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Plus, ArrowLeft, Trash2, Mail } from 'lucide-react';
+import { Users, Plus, ArrowLeft, Trash2, Mail, Edit } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -23,6 +25,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -48,6 +58,12 @@ const SchoolHeads = () => {
   const [heads, setHeads] = useState<HeadData[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  
+  // Edit state
+  const [editHead, setEditHead] = useState<HeadData | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const fetchData = async () => {
     if (!schoolId) return;
@@ -162,6 +178,74 @@ const SchoolHeads = () => {
     setDeleteId(null);
   };
 
+  const openEditDialog = (head: HeadData) => {
+    setEditHead(head);
+    setEditName(head.full_name);
+    setEditEmail(head.email);
+  };
+
+  const closeEditDialog = () => {
+    setEditHead(null);
+    setEditName('');
+    setEditEmail('');
+  };
+
+  const handleEdit = async () => {
+    if (!editHead) return;
+
+    if (!editName.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Nama tidak boleh kosong',
+      });
+      return;
+    }
+
+    if (!editEmail.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Emel tidak boleh kosong',
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editName.trim(),
+          email: editEmail.trim(),
+        })
+        .eq('id', editHead.id);
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      toast({
+        title: 'Berjaya',
+        description: 'Maklumat berjaya dikemaskini',
+      });
+
+      closeEditDialog();
+      fetchData();
+    } catch (error: any) {
+      console.error('Error updating head:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: error.message || 'Gagal mengemaskini maklumat',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -224,7 +308,7 @@ const SchoolHeads = () => {
                   <TableHead className="hidden md:table-cell">Emel</TableHead>
                   <TableHead className="hidden sm:table-cell">Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Tarikh Daftar</TableHead>
-                  <TableHead className="w-20 text-right">Tindakan</TableHead>
+                  <TableHead className="w-24 text-right">Tindakan</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -258,14 +342,23 @@ const SchoolHeads = () => {
                       })}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeleteId(head.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(head)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setDeleteId(head.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -274,6 +367,49 @@ const SchoolHeads = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editHead} onOpenChange={() => closeEditDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Ketua Penasihat</DialogTitle>
+            <DialogDescription>
+              Kemaskini maklumat ketua penasihat
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editName">Nama Penuh</Label>
+              <Input
+                id="editName"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Masukkan nama penuh"
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editEmail">Emel</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="Masukkan emel"
+                disabled={saving}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEditDialog} disabled={saving}>
+              Batal
+            </Button>
+            <Button onClick={handleEdit} disabled={saving}>
+              {saving ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
