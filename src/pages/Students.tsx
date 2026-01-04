@@ -418,7 +418,7 @@ const Students = () => {
                 id="name"
                 placeholder="Nama pelajar"
                 value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value.toUpperCase() })}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -493,7 +493,7 @@ const Students = () => {
               <Input
                 id="edit-name"
                 value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value.toUpperCase() })}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
