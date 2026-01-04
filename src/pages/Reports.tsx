@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   FileText, Users, Calendar, TrendingUp, 
-  AlertTriangle, CheckCircle2, Clock, XCircle,
+  AlertTriangle, CheckCircle2, XCircle,
   Table as TableIcon, ChevronRight
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -37,7 +37,6 @@ interface AttendanceRecord {
 
 const COLORS = {
   hadir: '#22c55e',
-  lewat: '#eab308', 
   tidak_hadir: '#ef4444',
 };
 
@@ -106,7 +105,6 @@ const Reports = () => {
     const meetingAttendance = attendance.filter(a => a.meeting_id === meetingId);
     return {
       hadir: meetingAttendance.filter(a => a.status === 'hadir').length,
-      lewat: meetingAttendance.filter(a => a.status === 'lewat').length,
       tidak_hadir: meetingAttendance.filter(a => a.status === 'tidak_hadir').length,
       total: meetingAttendance.length,
     };
@@ -116,23 +114,19 @@ const Reports = () => {
   const getStudentAttendance = (studentId: string) => {
     const studentRecords = attendance.filter(a => a.student_id === studentId);
     const hadir = studentRecords.filter(a => a.status === 'hadir').length;
-    const lewat = studentRecords.filter(a => a.status === 'lewat').length;
     const total = studentRecords.length;
     
-    // Count hadir + lewat as "present"
-    const presentCount = hadir + lewat;
-    const percentage = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+    const percentage = total > 0 ? Math.round((hadir / total) * 100) : 0;
     
-    return { hadir, lewat, tidak_hadir: total - presentCount, total, percentage };
+    return { hadir, tidak_hadir: total - hadir, total, percentage };
   };
 
   // Overall stats
   const completedMeetings = meetings.filter(m => m.is_completed).length;
   const totalAttendanceRecords = attendance.length;
   const totalHadir = attendance.filter(a => a.status === 'hadir').length;
-  const totalLewat = attendance.filter(a => a.status === 'lewat').length;
   const overallPercentage = totalAttendanceRecords > 0 
-    ? Math.round(((totalHadir + totalLewat) / totalAttendanceRecords) * 100) 
+    ? Math.round((totalHadir / totalAttendanceRecords) * 100) 
     : 0;
 
   // Students at risk (< 70% attendance)
@@ -148,7 +142,6 @@ const Reports = () => {
     
     return [
       { name: 'Hadir', value: stats.hadir, color: COLORS.hadir },
-      { name: 'Lewat', value: stats.lewat, color: COLORS.lewat },
       { name: 'Tidak Hadir', value: stats.tidak_hadir, color: COLORS.tidak_hadir },
     ].filter(d => d.value > 0);
   };
@@ -303,7 +296,7 @@ const Reports = () => {
                   const pieData = getPieData(meeting.id);
                   const stats = getMeetingStats(meeting.id);
                   const attendanceRate = stats.total > 0 
-                    ? Math.round(((stats.hadir + stats.lewat) / stats.total) * 100) 
+                    ? Math.round((stats.hadir / stats.total) * 100)
                     : 0;
 
                   return (
@@ -356,10 +349,6 @@ const Reports = () => {
                             <span className="flex items-center gap-1">
                               <span className="w-2 h-2 rounded-full bg-green-500" />
                               {stats.hadir}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                              {stats.lewat}
                             </span>
                             <span className="flex items-center gap-1">
                               <span className="w-2 h-2 rounded-full bg-red-500" />
@@ -417,7 +406,7 @@ const Reports = () => {
                         {student.attendance.percentage}%
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {student.attendance.hadir + student.attendance.lewat}/{student.attendance.total} hadir
+                        {student.attendance.hadir}/{student.attendance.total} hadir
                       </p>
                     </div>
                   </motion.div>
@@ -432,10 +421,6 @@ const Reports = () => {
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-green-500" />
             <span>Hadir</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-yellow-500" />
-            <span>Lewat</span>
           </div>
           <div className="flex items-center gap-1.5">
             <XCircle className="w-4 h-4 text-red-500" />

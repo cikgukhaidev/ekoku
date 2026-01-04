@@ -153,13 +153,9 @@ const AttendanceReport = () => {
     setLoading(false);
   };
 
-  // Helper to convert name to Title Case
-  const toTitleCase = (str: string) => {
-    return str
-      .toLowerCase()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+  // Helper to convert name to UPPERCASE
+  const toUpperCase = (str: string) => {
+    return str.toUpperCase();
   };
 
   // Get unique form levels
@@ -267,8 +263,8 @@ const AttendanceReport = () => {
         <thead>
           <tr>
             <th className="border border-black p-1 text-center w-6">Bil</th>
-            <th className="border border-black p-1 text-left min-w-[120px] text-[11px]">Nama Pelajar</th>
-            <th className="border border-black p-1 text-center w-14">Kelas</th>
+            <th className="border border-black p-1 text-left text-[10px]">Nama Pelajar</th>
+            <th className="border border-black p-1 text-center w-16 whitespace-nowrap">Kelas</th>
             {Array.from({ length: totalMeetings }, (_, i) => (
               <th key={i + 1} className="border border-black p-1 text-center w-5">
                 {i + 1}
@@ -289,7 +285,7 @@ const AttendanceReport = () => {
                 const status = getAttendanceStatus(student.id, meeting.id);
                 if (status) {
                   totalRecorded++;
-                  if (status === 'hadir' || status === 'lewat') {
+                  if (status === 'hadir') {
                     hadirCount++;
                   }
                 }
@@ -299,8 +295,8 @@ const AttendanceReport = () => {
             return (
               <tr key={student.id}>
                 <td className="border border-black p-1 text-center">{index + 1}</td>
-                <td className="border border-black p-1 text-[11px]">{toTitleCase(student.full_name)}</td>
-                <td className="border border-black p-1 text-center">
+                <td className="border border-black p-1 text-[10px]">{toUpperCase(student.full_name)}</td>
+                <td className="border border-black p-1 text-center whitespace-nowrap">
                   {formatClassName(student.form_level, student.class_name)}
                 </td>
                 {Array.from({ length: totalMeetings }, (_, i) => {
@@ -310,7 +306,11 @@ const AttendanceReport = () => {
 
                   return (
                     <td key={meetingNum} className="border border-black p-1 text-center">
-                      {status === 'hadir' || status === 'lewat' ? '✓' : status === 'tidak_hadir' ? '✗' : '-'}
+                      {status === 'hadir' ? (
+                        <span style={{ color: '#16a34a' }}>✓</span>
+                      ) : status === 'tidak_hadir' ? (
+                        <span style={{ color: '#dc2626' }}>✗</span>
+                      ) : '-'}
                     </td>
                   );
                 })}
@@ -326,7 +326,7 @@ const AttendanceReport = () => {
         <div className="flex justify-between items-start">
           <div>
             <p className="mb-1"><strong>Petunjuk:</strong></p>
-            <p>✓ = Hadir/Lewat | ✗ = Tidak Hadir | - = Tiada Rekod</p>
+            <p><span style={{ color: '#16a34a' }}>✓</span> = Hadir | <span style={{ color: '#dc2626' }}>✗</span> = Tidak Hadir | - = Tiada Rekod</p>
           </div>
           <div className="text-right">
             <p>Tarikh Cetak: {new Date().toLocaleDateString('ms-MY')}</p>
@@ -452,9 +452,9 @@ const AttendanceReport = () => {
                             {rowNumber}
                           </TableCell>
                           <TableCell className="font-medium sticky left-8 bg-background px-2 py-1 text-[10px] truncate max-w-[150px]">
-                            {toTitleCase(student.full_name)}
+                            {toUpperCase(student.full_name)}
                           </TableCell>
-                          <TableCell className="text-center px-1 py-1 text-[10px]">
+                          <TableCell className="text-center px-1 py-1 text-[10px] whitespace-nowrap">
                             {student.form_level} {student.class_name.toUpperCase()}
                           </TableCell>
                           {Array.from({ length: totalMeetings }, (_, i) => {
@@ -466,7 +466,7 @@ const AttendanceReport = () => {
 
                             return (
                               <TableCell key={meetingNum} className="text-center px-0.5 py-1">
-                                {status === 'hadir' || status === 'lewat' ? (
+                                {status === 'hadir' ? (
                                   <Check className="w-3 h-3 mx-auto text-green-600" />
                                 ) : status === 'tidak_hadir' ? (
                                   <X className="w-3 h-3 mx-auto text-red-600" />
@@ -528,7 +528,7 @@ const AttendanceReport = () => {
         <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground pt-4 border-t">
           <div className="flex items-center gap-2">
             <Check className="w-4 h-4 text-green-600" />
-            <span>Hadir / Lewat</span>
+            <span>Hadir</span>
           </div>
           <div className="flex items-center gap-2">
             <X className="w-4 h-4 text-red-600" />
