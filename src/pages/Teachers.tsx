@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Plus, Trash2, Mail } from 'lucide-react';
+import { Users, Plus, Trash2, Mail, Edit, Trophy, Shield, Users2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -23,6 +25,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth';
@@ -32,10 +55,22 @@ interface TeacherData {
   full_name: string;
   email: string;
   unit_name: string | null;
+  kokurikulum_category: string | null;
   is_active: boolean;
   created_at: string;
   user_id: string;
 }
+
+const CATEGORIES = [
+  { value: 'sukan_permainan', label: 'Sukan Dan Permainan', icon: Trophy },
+  { value: 'unit_uniform', label: 'Unit Uniform', icon: Shield },
+  { value: 'persatuan_kelab', label: 'Persatuan Dan Kelab', icon: Users2 },
+] as const;
+
+const getCategoryLabel = (value: string | null) => {
+  const cat = CATEGORIES.find(c => c.value === value);
+  return cat?.label || '-';
+};
 
 const Teachers = () => {
   const navigate = useNavigate();
@@ -45,6 +80,15 @@ const Teachers = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState<string>('');
+  const [activeTab, setActiveTab] = useState('all');
+
+  // Edit state
+  const [editTeacher, setEditTeacher] = useState<TeacherData | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editUnitName, setEditUnitName] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const fetchData = async () => {
     if (!user) return;
@@ -79,7 +123,7 @@ const Teachers = () => {
       // Fetch all profiles in same school
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email, unit_name, is_active, created_at, user_id')
+        .select('id, full_name, email, unit_name, kokurikulum_category, is_active, created_at, user_id')
         .eq('school_id', schoolId);
 
       if (profilesError) {
@@ -154,6 +198,87 @@ const Teachers = () => {
     setDeleteId(null);
   };
 
+  const openEditDialog = (teacher: TeacherData) => {
+    setEditTeacher(teacher);
+    setEditName(teacher.full_name);
+    setEditEmail(teacher.email);
+    setEditUnitName(teacher.unit_name || '');
+    setEditCategory(teacher.kokurikulum_category || '');
+  };
+
+  const closeEditDialog = () => {
+    setEditTeacher(null);
+    setEditName('');
+    setEditEmail('');
+    setEditUnitName('');
+    setEditCategory('');
+  };
+
+  const handleEdit = async () => {
+    if (!editTeacher) return;
+
+    if (!editName.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Nama tidak boleh kosong',
+      });
+      return;
+    }
+
+    if (!editEmail.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Emel tidak boleh kosong',
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editName.trim(),
+          email: editEmail.trim(),
+          unit_name: editUnitName.trim() || null,
+          kokurikulum_category: (editCategory as "sukan_permainan" | "unit_uniform" | "persatuan_kelab") || null,
+        })
+        .eq('id', editTeacher.id);
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      toast({
+        title: 'Berjaya',
+        description: 'Maklumat berjaya dikemaskini',
+      });
+
+      closeEditDialog();
+      fetchData();
+    } catch (error: any) {
+      console.error('Error updating teacher:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: error.message || 'Gagal mengemaskini maklumat',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filteredTeachers = activeTab === 'all' 
+    ? teachers 
+    : teachers.filter(t => t.kokurikulum_category === activeTab);
+
+  const getCountByCategory = (category: string) => {
+    return teachers.filter(t => t.kokurikulum_category === category).length;
+  };
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -166,7 +291,7 @@ const Teachers = () => {
           <div>
             <h1 className="font-display text-xl md:text-2xl font-bold">Pengurusan Guru</h1>
             <p className="text-sm text-muted-foreground">
-              {schoolName || 'Memuatkan...'}
+              {schoolName || 'Memuatkan...'} • {teachers.length} guru
             </p>
           </div>
           <Button onClick={() => navigate('/teachers/add')} className="hidden md:flex">
@@ -201,70 +326,171 @@ const Teachers = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-lg border border-border overflow-hidden"
           >
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Nama</TableHead>
-                  <TableHead className="hidden md:table-cell">Emel</TableHead>
-                  <TableHead className="hidden sm:table-cell">Unit</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Tarikh Daftar</TableHead>
-                  <TableHead className="w-20 text-right">Tindakan</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teachers.map((teacher, index) => (
-                  <TableRow key={teacher.id}>
-                    <TableCell className="font-medium text-muted-foreground">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{teacher.full_name}</p>
-                        <p className="text-xs text-muted-foreground md:hidden">{teacher.email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-muted-foreground" />
-                        {teacher.email}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {teacher.unit_name || '-'}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge variant={teacher.is_active ? 'default' : 'secondary'}>
-                        {teacher.is_active ? 'Aktif' : 'Tidak Aktif'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-muted-foreground">
-                      {new Date(teacher.created_at).toLocaleDateString('ms-MY', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeleteId(teacher.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+              <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+                <TabsTrigger value="all" className="text-xs md:text-sm">
+                  Semua ({teachers.length})
+                </TabsTrigger>
+                {CATEGORIES.map((cat) => (
+                  <TabsTrigger key={cat.value} value={cat.value} className="text-xs md:text-sm">
+                    <cat.icon className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+                    <span className="hidden md:inline">{cat.label.split(' ')[0]}</span>
+                    <span className="md:hidden">{cat.label.split(' ')[0].slice(0, 3)}</span>
+                    <span className="ml-1">({getCountByCategory(cat.value)})</span>
+                  </TabsTrigger>
                 ))}
-              </TableBody>
-            </Table>
+              </TabsList>
+
+              <div className="rounded-lg border border-border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Nama</TableHead>
+                      <TableHead className="hidden md:table-cell">Emel</TableHead>
+                      <TableHead className="hidden sm:table-cell">Kategori</TableHead>
+                      <TableHead className="hidden sm:table-cell">Unit</TableHead>
+                      <TableHead className="hidden lg:table-cell">Status</TableHead>
+                      <TableHead className="w-24 text-right">Tindakan</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTeachers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          Tiada guru dalam kategori ini
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredTeachers.map((teacher, index) => (
+                        <TableRow key={teacher.id}>
+                          <TableCell className="font-medium text-muted-foreground">
+                            {index + 1}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{teacher.full_name}</p>
+                              <p className="text-xs text-muted-foreground md:hidden">{teacher.email}</p>
+                              <p className="text-xs text-muted-foreground sm:hidden">{teacher.unit_name || '-'}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-muted-foreground" />
+                              {teacher.email}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Badge variant="outline">
+                              {getCategoryLabel(teacher.kokurikulum_category)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            {teacher.unit_name || '-'}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            <Badge variant={teacher.is_active ? 'default' : 'secondary'}>
+                              {teacher.is_active ? 'Aktif' : 'Tidak Aktif'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditDialog(teacher)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeleteId(teacher.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </Tabs>
           </motion.div>
         )}
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editTeacher} onOpenChange={() => closeEditDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Guru</DialogTitle>
+            <DialogDescription>
+              Kemaskini maklumat guru penasihat
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editName">Nama Penuh</Label>
+              <Input
+                id="editName"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Masukkan nama penuh"
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editEmail">Emel</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="Masukkan emel"
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editCategory">Kategori Kokurikulum</Label>
+              <Select value={editCategory} onValueChange={setEditCategory} disabled={saving}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editUnitName">Nama Unit</Label>
+              <Input
+                id="editUnitName"
+                value={editUnitName}
+                onChange={(e) => setEditUnitName(e.target.value)}
+                placeholder="Masukkan nama unit"
+                disabled={saving}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEditDialog} disabled={saving}>
+              Batal
+            </Button>
+            <Button onClick={handleEdit} disabled={saving}>
+              {saving ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
