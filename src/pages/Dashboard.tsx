@@ -278,12 +278,39 @@ const Dashboard = () => {
       </div>
 
       <div className="p-4 md:p-6">
+        {/* Announcements Section - Above stat cards for guru */}
+        {role === 'guru' && announcements.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg"
+          >
+            <h4 className="font-semibold text-destructive flex items-center gap-2 mb-3">
+              <Megaphone className="w-5 h-5" />
+              Pengumuman Terkini
+            </h4>
+            <div className="space-y-3">
+              {announcements.map((announcement, index) => (
+                <AnnouncementCard
+                  key={announcement.id}
+                  title={announcement.title}
+                  content={announcement.content}
+                  createdAt={announcement.created_at}
+                  isGlobal={announcement.is_global}
+                  delay={0.1 + index * 0.05}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {role === 'guru' && renderGuruDashboard()}
         {role === 'ketua_penasihat' && renderKetuaDashboard()}
         {role === 'superadmin' && renderSuperadminDashboard()}
 
-        {/* Announcements Section - For all roles including guru */}
-        {announcements.length > 0 && (
+        {/* Announcements Section - Below dashboard for non-guru roles */}
+        {role !== 'guru' && announcements.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
