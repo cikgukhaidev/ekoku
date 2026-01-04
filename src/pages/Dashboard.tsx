@@ -66,15 +66,27 @@ const Dashboard = () => {
       }
 
       if (role === 'ketua_penasihat') {
-        const { count: teacherCount } = await supabase
+        // Get profiles in same school
+        const { data: profilesData } = await supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .select('user_id')
           .eq('school_id', profile?.school_id);
 
-        setStats(prev => ({
-          ...prev,
-          totalTeachers: teacherCount || 0,
-        }));
+        if (profilesData && profilesData.length > 0) {
+          const userIds = profilesData.map(p => p.user_id);
+          
+          // Count only users with 'guru' role
+          const { count: teacherCount } = await supabase
+            .from('user_roles')
+            .select('*', { count: 'exact', head: true })
+            .in('user_id', userIds)
+            .eq('role', 'guru');
+
+          setStats(prev => ({
+            ...prev,
+            totalTeachers: teacherCount || 0,
+          }));
+        }
       }
 
       if (role === 'superadmin') {
