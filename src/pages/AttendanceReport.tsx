@@ -259,18 +259,18 @@ const AttendanceReport = () => {
       </div>
 
       {/* Print Table */}
-      <table className="w-full border-collapse text-[9px] print-table">
+      <table className="w-full border-collapse text-[8px] print-table">
         <thead>
           <tr>
-            <th className="border border-black p-1 text-center w-6">Bil</th>
-            <th className="border border-black p-1 text-left text-[10px]">Nama Pelajar</th>
-            <th className="border border-black p-1 text-center w-16 whitespace-nowrap">Kelas</th>
+            <th className="border border-black px-1 py-0.5 text-center" style={{ width: '20px' }}>Bil</th>
+            <th className="border border-black px-1 py-0.5 text-left" style={{ minWidth: '140px', maxWidth: '180px' }}>Nama Pelajar</th>
+            <th className="border border-black px-1 py-0.5 text-center whitespace-nowrap" style={{ width: '50px' }}>Kelas</th>
             {Array.from({ length: totalMeetings }, (_, i) => (
-              <th key={i + 1} className="border border-black p-1 text-center w-5">
+              <th key={i + 1} className="border border-black px-0.5 py-0.5 text-center" style={{ width: '18px' }}>
                 {i + 1}
               </th>
             ))}
-            <th className="border border-black p-1 text-center w-10">Jumlah</th>
+            <th className="border border-black px-1 py-0.5 text-center" style={{ width: '35px' }}>Jum</th>
           </tr>
         </thead>
         <tbody>
@@ -294,9 +294,9 @@ const AttendanceReport = () => {
             
             return (
               <tr key={student.id}>
-                <td className="border border-black p-1 text-center">{index + 1}</td>
-                <td className="border border-black p-1 text-[10px]">{toUpperCase(student.full_name)}</td>
-                <td className="border border-black p-1 text-center whitespace-nowrap">
+                <td className="border border-black px-1 py-0.5 text-center">{index + 1}</td>
+                <td className="border border-black px-1 py-0.5 text-[9px]" style={{ maxWidth: '180px' }}>{toUpperCase(student.full_name)}</td>
+                <td className="border border-black px-1 py-0.5 text-center whitespace-nowrap">
                   {formatClassName(student.form_level, student.class_name)}
                 </td>
                 {Array.from({ length: totalMeetings }, (_, i) => {
@@ -305,16 +305,16 @@ const AttendanceReport = () => {
                   const status = meeting ? getAttendanceStatus(student.id, meeting.id) : null;
 
                   return (
-                    <td key={meetingNum} className="border border-black p-1 text-center">
+                    <td key={meetingNum} className="border border-black px-0.5 py-0.5 text-center">
                       {status === 'hadir' ? (
-                        <span style={{ color: '#16a34a' }}>✓</span>
+                        <span style={{ color: '#16a34a', fontSize: '9px' }}>✓</span>
                       ) : status === 'tidak_hadir' ? (
-                        <span style={{ color: '#dc2626' }}>✗</span>
+                        <span style={{ color: '#dc2626', fontSize: '9px' }}>✗</span>
                       ) : '-'}
                     </td>
                   );
                 })}
-                <td className="border border-black p-1 text-center font-semibold">{hadirCount}/{totalRecorded}</td>
+                <td className="border border-black px-1 py-0.5 text-center font-semibold">{hadirCount}/{totalRecorded}</td>
               </tr>
             );
           })}
