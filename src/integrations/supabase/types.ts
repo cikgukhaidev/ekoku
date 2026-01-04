@@ -52,6 +52,45 @@ export type Database = {
           },
         ]
       }
+      activity_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          description: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          error_message: string | null
+          id: string
+          school_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          error_message?: string | null
+          id?: string
+          school_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          error_message?: string | null
+          id?: string
+          school_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           author_id: string | null

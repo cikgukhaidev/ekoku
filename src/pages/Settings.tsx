@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Lock, Save, Settings as SettingsIcon, Key, Calendar, GraduationCap, Plus, Trash2, GripVertical, BookOpen, Check } from 'lucide-react';
+import { Eye, EyeOff, Lock, Save, Settings as SettingsIcon, Key, Calendar, GraduationCap, Plus, Trash2, GripVertical, BookOpen, Check, RefreshCw } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Card,
   CardContent,
@@ -16,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { logActivity } from '@/lib/activityLogger';
 
 const Settings = () => {
   const { user, profile, role, markPasswordChanged } = useAuth();
@@ -30,8 +32,10 @@ const Settings = () => {
   const [classNames, setClassNames] = useState<string[]>([]);
   const [newClassName, setNewClassName] = useState('');
   const [sessions, setSessions] = useState<{ id: string; year: number; is_active: boolean }[]>([]);
-  const [newSessionYear, setNewSessionYear] = useState(new Date().getFullYear());
+  const [newSessionYear, setNewSessionYear] = useState(new Date().getFullYear() + 1);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [autoForward, setAutoForward] = useState(true);
+  const [forwardingInProgress, setForwardingInProgress] = useState(false);
 
   const fetchSessions = async () => {
     if (!profile?.school_id) return;
@@ -276,6 +280,9 @@ const Settings = () => {
 
     setSessionsLoading(true);
 
+    // Get previous active session for auto-forward
+    const previousSession = sessions.find(s => s.is_active);
+
     // Deactivate other sessions first
     await supabase
       .from('academic_sessions')
@@ -283,13 +290,15 @@ const Settings = () => {
       .eq('school_id', profile.school_id);
 
     // Create new session
-    const { error } = await supabase
+    const { data: newSession, error } = await supabase
       .from('academic_sessions')
       .insert({
         school_id: profile.school_id,
         year: newSessionYear,
         is_active: true,
-      });
+      })
+      .select()
+      .single();
 
     if (error) {
       toast({
@@ -297,14 +306,113 @@ const Settings = () => {
         title: 'Ralat',
         description: 'Gagal mencipta sesi akademik',
       });
-    } else {
-      toast({
-        title: 'Berjaya',
-        description: `Sesi ${newSessionYear} berjaya dicipta`,
+      await logActivity({
+        actionType: 'error',
+        entityType: 'session',
+        description: `Gagal mencipta sesi akademik ${newSessionYear}`,
+        errorMessage: error.message,
       });
-      fetchSessions();
+      setSessionsLoading(false);
+      return;
     }
+
+    await logActivity({
+      actionType: 'create',
+      entityType: 'session',
+      entityId: newSession.id,
+      description: `Sesi akademik ${newSessionYear} berjaya dicipta`,
+    });
+
+    // Auto-forward students if enabled and previous session exists
+    if (autoForward && previousSession && newSession) {
+      await handleAutoForwardStudents(previousSession.id, newSession.id, newSessionYear);
+    }
+
+    toast({
+      title: 'Berjaya',
+      description: `Sesi ${newSessionYear} berjaya dicipta${autoForward && previousSession ? ' dan pelajar di-forward' : ''}`,
+    });
+    
+    fetchSessions();
     setSessionsLoading(false);
+  };
+
+  const handleAutoForwardStudents = async (previousSessionId: string, newSessionId: string, newYear: number) => {
+    setForwardingInProgress(true);
+    
+    try {
+      // Get all students from previous session (form 1-4 only, form 5 graduates)
+      const { data: previousStudents, error: fetchError } = await supabase
+        .from('students')
+        .select('*')
+        .eq('session_id', previousSessionId)
+        .eq('is_active', true)
+        .lt('form_level', 5); // Only get form 1-4
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!previousStudents || previousStudents.length === 0) {
+        await logActivity({
+          actionType: 'forward',
+          entityType: 'student',
+          description: `Tiada pelajar untuk di-forward ke sesi ${newYear}`,
+        });
+        setForwardingInProgress(false);
+        return;
+      }
+
+      // Create new student records with incremented form_level
+      const newStudents = previousStudents.map(student => ({
+        full_name: student.full_name,
+        class_name: student.class_name,
+        form_level: student.form_level + 1,
+        session_id: newSessionId,
+        teacher_id: student.teacher_id,
+        is_active: true,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('students')
+        .insert(newStudents);
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      await logActivity({
+        actionType: 'forward',
+        entityType: 'student',
+        description: `${newStudents.length} pelajar berjaya di-forward ke sesi ${newYear} (Tingkatan naik +1)`,
+        details: {
+          count: newStudents.length,
+          fromSession: previousSessionId,
+          toSession: newSessionId,
+        },
+      });
+
+      toast({
+        title: 'Auto-Forward Berjaya',
+        description: `${newStudents.length} pelajar berjaya dipindahkan ke sesi baru`,
+      });
+
+    } catch (error: any) {
+      console.error('Auto-forward error:', error);
+      await logActivity({
+        actionType: 'error',
+        entityType: 'student',
+        description: 'Gagal auto-forward pelajar',
+        errorMessage: error.message,
+      });
+      toast({
+        variant: 'destructive',
+        title: 'Ralat Auto-Forward',
+        description: 'Gagal memindahkan pelajar ke sesi baru',
+      });
+    }
+
+    setForwardingInProgress(false);
   };
 
   const handleSetActiveSession = async (sessionId: string) => {
@@ -530,21 +638,51 @@ const Settings = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Create new session */}
-        <div className="flex gap-3 items-end">
-          <div className="space-y-2 flex-1">
-            <Label>Tahun Sesi Baru</Label>
-            <Input
-              type="number"
-              min={2020}
-              max={2100}
-              value={newSessionYear}
-              onChange={(e) => setNewSessionYear(parseInt(e.target.value) || new Date().getFullYear())}
-            />
+        <div className="space-y-4">
+          <div className="flex gap-3 items-end">
+            <div className="space-y-2 flex-1">
+              <Label>Tahun Sesi Baru</Label>
+              <Input
+                type="number"
+                min={2020}
+                max={2100}
+                value={newSessionYear}
+                onChange={(e) => setNewSessionYear(parseInt(e.target.value) || new Date().getFullYear())}
+              />
+            </div>
+            <Button onClick={handleCreateSession} disabled={sessionsLoading || forwardingInProgress}>
+              {forwardingInProgress ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Cipta Sesi
+                </>
+              )}
+            </Button>
           </div>
-          <Button onClick={handleCreateSession} disabled={sessionsLoading}>
-            <Plus className="w-4 h-4 mr-2" />
-            Cipta Sesi
-          </Button>
+          
+          {/* Auto-forward checkbox */}
+          {sessions.length > 0 && (
+            <div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
+              <Checkbox
+                id="auto-forward"
+                checked={autoForward}
+                onCheckedChange={(checked) => setAutoForward(checked === true)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="auto-forward" className="text-sm font-medium cursor-pointer">
+                  Auto-forward pelajar dari sesi sebelum
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Pelajar Tingkatan 1-4 akan dipindahkan ke sesi baru dengan tingkatan naik +1. Pelajar Tingkatan 5 tidak dipindahkan (tamat pengajian).
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* List sessions */}
