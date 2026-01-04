@@ -341,8 +341,8 @@ const AttendanceReport = () => {
       <style>{`
         @media print {
           @page {
-            size: A4 landscape;
-            margin: 10mm;
+            size: A4 portrait;
+            margin: 8mm;
           }
           .print-content {
             width: 100%;
