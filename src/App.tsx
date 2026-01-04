@@ -23,6 +23,7 @@ import AddTeacher from "./pages/AddTeacher";
 import Heads from "./pages/Heads";
 import Announcements from "./pages/Announcements";
 import AddAnnouncement from "./pages/AddAnnouncement";
+import ActivityLogs from "./pages/ActivityLogs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/heads" element={<Heads />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/announcements/add" element={<AddAnnouncement />} />
+            <Route path="/activity-logs" element={<ActivityLogs />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Users, Calendar, Settings, BarChart3, School, Megaphone } from 'lucide-react';
+import { Home, Users, Calendar, Settings, BarChart3, School, Megaphone, Activity } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
@@ -40,7 +40,10 @@ export const MobileNav = () => {
       );
     }
 
-    items.push({ path: '/settings', icon: <Settings className="w-5 h-5" />, label: 'Tetapan' });
+    items.push(
+      { path: '/activity-logs', icon: <Activity className="w-5 h-5" />, label: 'Log' },
+      { path: '/settings', icon: <Settings className="w-5 h-5" />, label: 'Tetapan' }
+    );
 
     return items;
   };

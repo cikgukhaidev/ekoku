@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, Search, Filter, Edit2, Trash2, 
-  UserPlus, ChevronDown, Users 
+  UserPlus, ChevronDown, Users, Download, Upload, FileUp
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Select, 
   SelectContent, 
@@ -26,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { logActivity } from '@/lib/activityLogger';
 
 interface Student {
   id: string;
@@ -55,6 +57,11 @@ const Students = () => {
     class_name: '',
     form_level: '1',
   });
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportFormLevel, setExportFormLevel] = useState<string>('2');
+  const [incrementFormLevel, setIncrementFormLevel] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -193,14 +200,183 @@ const Students = () => {
         title: 'Ralat',
         description: 'Gagal menambah pelajar',
       });
+      await logActivity({
+        actionType: 'error',
+        entityType: 'student',
+        description: `Gagal menambah pelajar: ${formData.full_name}`,
+        errorMessage: error.message,
+      });
     } else {
       toast({
         title: 'Berjaya',
         description: 'Pelajar berjaya ditambah',
       });
+      await logActivity({
+        actionType: 'create',
+        entityType: 'student',
+        description: `Pelajar ditambah: ${formData.full_name} (Tingkatan ${formData.form_level} ${formData.class_name})`,
+      });
       setIsAddDialogOpen(false);
       setFormData({ full_name: '', class_name: '', form_level: '1' });
       fetchStudents();
+    }
+  };
+
+  // Export students to CSV
+  const handleExportStudents = () => {
+    const formLevel = parseInt(exportFormLevel);
+    const studentsToExport = students.filter(s => s.form_level === formLevel);
+    
+    if (studentsToExport.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: `Tiada pelajar Tingkatan ${formLevel} untuk diexport`,
+      });
+      return;
+    }
+
+    // Create CSV content with incremented form level if checked
+    const exportFormLevelValue = incrementFormLevel ? formLevel + 1 : formLevel;
+    const csvHeader = 'Nama Penuh,Tingkatan,Kelas';
+    const csvRows = studentsToExport.map(s => 
+      `"${s.full_name}",${exportFormLevelValue},"${s.class_name}"`
+    );
+    const csvContent = [csvHeader, ...csvRows].join('\n');
+
+    // Download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pelajar_tingkatan_${formLevel}_ke_${exportFormLevelValue}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    logActivity({
+      actionType: 'download',
+      entityType: 'student',
+      description: `Export ${studentsToExport.length} pelajar Tingkatan ${formLevel} (sebagai Tingkatan ${exportFormLevelValue})`,
+    });
+
+    toast({
+      title: 'Berjaya',
+      description: `${studentsToExport.length} pelajar berjaya diexport`,
+    });
+    setIsExportDialogOpen(false);
+  };
+
+  // Import students from CSV
+  const handleImportStudents = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Get active session
+    const { data: session } = await supabase
+      .from('academic_sessions')
+      .select('id')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!session) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Tiada sesi akademik aktif',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        // Skip header row
+        const dataLines = lines.slice(1);
+        
+        if (dataLines.length === 0) {
+          toast({
+            variant: 'destructive',
+            title: 'Ralat',
+            description: 'Fail CSV kosong atau tiada data',
+          });
+          return;
+        }
+
+        const studentsToImport = dataLines.map(line => {
+          // Parse CSV line (handle quoted values)
+          const matches = line.match(/(".*?"|[^,]+)/g) || [];
+          const [name, formLevel, className] = matches.map(m => m.replace(/^"|"$/g, '').trim());
+          
+          return {
+            full_name: name?.toUpperCase() || '',
+            form_level: parseInt(formLevel) || 1,
+            class_name: className?.toUpperCase() || '',
+            session_id: session.id,
+            teacher_id: user?.id,
+            is_active: true,
+          };
+        }).filter(s => s.full_name && s.class_name);
+
+        if (studentsToImport.length === 0) {
+          toast({
+            variant: 'destructive',
+            title: 'Ralat',
+            description: 'Tiada data pelajar yang sah dalam fail',
+          });
+          return;
+        }
+
+        const { error } = await supabase.from('students').insert(studentsToImport);
+
+        if (error) {
+          toast({
+            variant: 'destructive',
+            title: 'Ralat',
+            description: 'Gagal mengimport pelajar',
+          });
+          await logActivity({
+            actionType: 'error',
+            entityType: 'student',
+            description: 'Gagal mengimport pelajar dari CSV',
+            errorMessage: error.message,
+          });
+        } else {
+          toast({
+            title: 'Berjaya',
+            description: `${studentsToImport.length} pelajar berjaya diimport`,
+          });
+          await logActivity({
+            actionType: 'upload',
+            entityType: 'student',
+            description: `${studentsToImport.length} pelajar diimport dari CSV`,
+          });
+          fetchStudents();
+          setIsImportDialogOpen(false);
+        }
+      } catch (err: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Ralat',
+          description: 'Format fail tidak sah',
+        });
+        await logActivity({
+          actionType: 'error',
+          entityType: 'student',
+          description: 'Gagal mengimport pelajar - format fail tidak sah',
+          errorMessage: err.message,
+        });
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -222,10 +398,23 @@ const Students = () => {
         title: 'Ralat',
         description: 'Gagal mengemaskini pelajar',
       });
+      await logActivity({
+        actionType: 'error',
+        entityType: 'student',
+        entityId: selectedStudent.id,
+        description: `Gagal mengemaskini pelajar: ${selectedStudent.full_name}`,
+        errorMessage: error.message,
+      });
     } else {
       toast({
         title: 'Berjaya',
         description: 'Maklumat pelajar dikemaskini',
+      });
+      await logActivity({
+        actionType: 'update',
+        entityType: 'student',
+        entityId: selectedStudent.id,
+        description: `Pelajar dikemaskini: ${formData.full_name} (Tingkatan ${formData.form_level} ${formData.class_name})`,
       });
       setIsEditDialogOpen(false);
       setSelectedStudent(null);
@@ -247,10 +436,23 @@ const Students = () => {
         title: 'Ralat',
         description: 'Gagal memadam pelajar',
       });
+      await logActivity({
+        actionType: 'error',
+        entityType: 'student',
+        entityId: selectedStudent.id,
+        description: `Gagal memadam pelajar: ${selectedStudent.full_name}`,
+        errorMessage: error.message,
+      });
     } else {
       toast({
         title: 'Berjaya',
         description: 'Pelajar berjaya dipadam',
+      });
+      await logActivity({
+        actionType: 'delete',
+        entityType: 'student',
+        entityId: selectedStudent.id,
+        description: `Pelajar dipadam: ${selectedStudent.full_name}`,
       });
       setIsDeleteDialogOpen(false);
       setSelectedStudent(null);
@@ -283,10 +485,20 @@ const Students = () => {
               {students.length} pelajar berdaftar
             </p>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="shadow-primary">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Tambah Pelajar
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setIsExportDialogOpen(true)}>
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              Import
+            </Button>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="shadow-primary">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Tambah Pelajar
+            </Button>
+          </div>
         </motion.div>
       </div>
 
@@ -568,6 +780,102 @@ const Students = () => {
             </Button>
             <Button variant="destructive" onClick={handleDeleteStudent}>
               Padam
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Pelajar</DialogTitle>
+            <DialogDescription>
+              Pilih tingkatan pelajar untuk diexport ke fail CSV
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Tingkatan</Label>
+              <Select value={exportFormLevel} onValueChange={setExportFormLevel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      Tingkatan {num}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
+              <Checkbox
+                id="increment-form"
+                checked={incrementFormLevel}
+                onCheckedChange={(checked) => setIncrementFormLevel(checked === true)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="increment-form" className="text-sm font-medium cursor-pointer">
+                  Naikkan tingkatan dalam fail
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Tingkatan {exportFormLevel} akan disimpan sebagai Tingkatan {incrementFormLevel ? parseInt(exportFormLevel) + 1 : exportFormLevel} dalam fail export
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleExportStudents}>
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import Pelajar</DialogTitle>
+            <DialogDescription>
+              Muat naik fail CSV untuk menambah pelajar secara pukal
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+              <FileUp className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground mb-3">
+                Format CSV: Nama Penuh, Tingkatan, Kelas
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleImportStudents}
+                className="hidden"
+                id="csv-upload"
+              />
+              <Button asChild variant="outline">
+                <label htmlFor="csv-upload" className="cursor-pointer">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Pilih Fail CSV
+                </label>
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Contoh baris: "ALI BIN ABU",3,"BESTARI"
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+              Tutup
             </Button>
           </DialogFooter>
         </DialogContent>
