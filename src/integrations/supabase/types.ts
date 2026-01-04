@@ -20,6 +20,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_archived: boolean | null
+          is_demo: boolean | null
           school_id: string
           updated_at: string
           year: number
@@ -29,6 +30,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_archived?: boolean | null
+          is_demo?: boolean | null
           school_id: string
           updated_at?: string
           year: number
@@ -38,6 +40,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_archived?: boolean | null
+          is_demo?: boolean | null
           school_id?: string
           updated_at?: string
           year?: number
@@ -139,6 +142,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_demo: boolean | null
           meeting_id: string
           status: Database["public"]["Enums"]["attendance_status"]
           student_id: string
@@ -147,6 +151,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_demo?: boolean | null
           meeting_id: string
           status?: Database["public"]["Enums"]["attendance_status"]
           student_id: string
@@ -155,6 +160,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_demo?: boolean | null
           meeting_id?: string
           status?: Database["public"]["Enums"]["attendance_status"]
           student_id?: string
@@ -182,6 +188,7 @@ export type Database = {
           created_at: string
           id: string
           is_completed: boolean | null
+          is_demo: boolean | null
           meeting_date: string
           meeting_number: number
           notes: string | null
@@ -193,6 +200,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_completed?: boolean | null
+          is_demo?: boolean | null
           meeting_date: string
           meeting_number: number
           notes?: string | null
@@ -204,6 +212,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_completed?: boolean | null
+          is_demo?: boolean | null
           meeting_date?: string
           meeting_number?: number
           notes?: string | null
@@ -229,6 +238,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean | null
+          is_demo: boolean | null
           kokurikulum_category:
             | Database["public"]["Enums"]["kokurikulum_category"]
             | null
@@ -245,6 +255,7 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean | null
+          is_demo?: boolean | null
           kokurikulum_category?:
             | Database["public"]["Enums"]["kokurikulum_category"]
             | null
@@ -261,6 +272,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean | null
+          is_demo?: boolean | null
           kokurikulum_category?:
             | Database["public"]["Enums"]["kokurikulum_category"]
             | null
@@ -284,6 +296,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_demo: boolean | null
           logo_url: string | null
           name: string
           updated_at: string
@@ -291,6 +304,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_demo?: boolean | null
           logo_url?: string | null
           name: string
           updated_at?: string
@@ -298,6 +312,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_demo?: boolean | null
           logo_url?: string | null
           name?: string
           updated_at?: string
@@ -312,6 +327,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean | null
+          is_demo: boolean | null
           session_id: string
           teacher_id: string | null
           updated_at: string
@@ -323,6 +339,7 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean | null
+          is_demo?: boolean | null
           session_id: string
           teacher_id?: string | null
           updated_at?: string
@@ -334,6 +351,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean | null
+          is_demo?: boolean | null
           session_id?: string
           teacher_id?: string | null
           updated_at?: string
