@@ -631,36 +631,36 @@ const Students = () => {
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.02 }}
-                  className="bg-card border border-border rounded-lg p-3 flex items-center gap-3"
+                  className="bg-card border border-border rounded-lg p-3 flex items-start gap-3"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs shrink-0 mt-0.5">
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{toTitleCase(student.full_name)}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-medium text-sm leading-tight">{toTitleCase(student.full_name)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {student.form_level} {student.class_name.toUpperCase()}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-7 w-7"
                       onClick={() => openEditDialog(student)}
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-3.5 h-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
                       onClick={() => {
                         setSelectedStudent(student);
                         setIsDeleteDialogOpen(true);
                       }}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </motion.div>
