@@ -415,7 +415,7 @@ const Teachers = () => {
                             <div>
                               <p className="font-medium">{toTitleCase(teacher.full_name)}</p>
                               <p className="text-xs text-muted-foreground md:hidden">{teacher.email}</p>
-                              <p className="text-xs text-muted-foreground sm:hidden">{toTitleCase(teacher.unit_name)}</p>
+                              <p className="text-xs text-muted-foreground sm:hidden">{teacher.unit_name?.toUpperCase() || '-'}</p>
                             </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
@@ -430,7 +430,7 @@ const Teachers = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
-                            {toTitleCase(teacher.unit_name)}
+                            {teacher.unit_name?.toUpperCase() || '-'}
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
                             <Badge variant={teacher.is_active ? 'default' : 'secondary'}>
