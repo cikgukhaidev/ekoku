@@ -10,6 +10,7 @@ import Setup from "./pages/Setup";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Meetings from "./pages/Meetings";
+import MeetingDetail from "./pages/MeetingDetail";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import ChangePassword from "./pages/ChangePassword";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/students" element={<Students />} />
             <Route path="/meetings" element={<Meetings />} />
+            <Route path="/meetings/:meetingNumber" element={<MeetingDetail />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/change-password" element={<ChangePassword />} />
