@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -51,25 +52,15 @@ const Settings = () => {
       if (role === 'ketua_penasihat') {
         const { data } = await supabase
           .from('teacher_settings')
-          .select('total_meetings')
+          .select('total_meetings, class_structure')
           .eq('user_id', user.id)
           .maybeSingle();
         
         if (data) {
           setTotalMeetings(data.total_meetings ?? 12);
-        }
-      }
-      
-      // Fetch guru settings (class structure)
-      if (role === 'guru') {
-        const { data } = await supabase
-          .from('teacher_settings')
-          .select('class_structure')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (data?.class_structure && Array.isArray(data.class_structure)) {
-          setClassStructure(data.class_structure as unknown as ClassItem[]);
+          if (data.class_structure && Array.isArray(data.class_structure)) {
+            setClassStructure(data.class_structure as unknown as ClassItem[]);
+          }
         }
       }
     };
@@ -263,6 +254,209 @@ const Settings = () => {
     return acc;
   }, {} as Record<number, string[]>);
 
+  const renderPasswordSection = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Key className="w-5 h-5 text-primary" />
+          Tukar Kata Laluan
+        </CardTitle>
+        <CardDescription>
+          Kemaskini kata laluan akaun anda
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="new-password">Kata Laluan Baru</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              id="new-password"
+              type={showNewPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={passwordForm.newPassword}
+              onChange={(e) =>
+                setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+              }
+              className="pl-9 pr-9"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            >
+              {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirm-password">Sahkan Kata Laluan</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              id="confirm-password"
+              type="password"
+              placeholder="••••••••"
+              value={passwordForm.confirmPassword}
+              onChange={(e) =>
+                setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+              }
+              className="pl-9"
+            />
+          </div>
+        </div>
+        <Button onClick={handleChangePassword} disabled={isLoading}>
+          <Save className="w-4 h-4 mr-2" />
+          Tukar Kata Laluan
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
+  const renderMeetingsSection = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-primary" />
+          Tetapan Perjumpaan
+        </CardTitle>
+        <CardDescription>
+          Tetapkan bilangan perjumpaan untuk sesi ini
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="total-meetings">Jumlah Perjumpaan</Label>
+          <div className="flex items-center gap-4">
+            <Input
+              id="total-meetings"
+              type="number"
+              min={1}
+              max={52}
+              value={totalMeetings}
+              onChange={(e) => setTotalMeetings(parseInt(e.target.value) || 12)}
+              className="w-24"
+            />
+            <span className="text-sm text-muted-foreground">perjumpaan setahun</span>
+          </div>
+        </div>
+        <Button onClick={handleSaveMeetings}>
+          <Save className="w-4 h-4 mr-2" />
+          Simpan Tetapan
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
+  const renderClassStructureSection = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <GraduationCap className="w-5 h-5 text-primary" />
+          Struktur Kelas
+        </CardTitle>
+        <CardDescription>
+          Tetapkan senarai kelas mengikut tingkatan dan susunan untuk semua guru
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Add new class */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Select
+            value={newClass.form_level}
+            onValueChange={(val) => setNewClass({ ...newClass, form_level: val })}
+          >
+            <SelectTrigger className="w-full sm:w-32">
+              <SelectValue placeholder="Tingkatan" />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 4, 5].map((num) => (
+                <SelectItem key={num} value={num.toString()}>
+                  Tingkatan {num}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Nama kelas (cth: Bestari)"
+            value={newClass.class_name}
+            onChange={(e) => setNewClass({ ...newClass, class_name: e.target.value })}
+            className="flex-1"
+          />
+          <Button onClick={handleAddClass} size="icon">
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Display classes grouped by form level */}
+        {classStructure.length > 0 ? (
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((formLevel) => {
+              const classesForForm = classStructure
+                .map((c, idx) => ({ ...c, originalIndex: idx }))
+                .filter(c => c.form_level === formLevel);
+              
+              if (classesForForm.length === 0) return null;
+              
+              return (
+                <div key={formLevel} className="space-y-2">
+                  <Label className="text-sm font-medium">Tingkatan {formLevel}</Label>
+                  <div className="space-y-1">
+                    {classesForForm.map((classItem, idx) => (
+                      <div
+                        key={classItem.originalIndex}
+                        className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg"
+                      >
+                        <GripVertical className="w-4 h-4 text-muted-foreground" />
+                        <span className="flex-1 text-sm">{classItem.class_name}</span>
+                        <span className="text-xs text-muted-foreground">#{idx + 1}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleMoveClass(classItem.originalIndex, 'up')}
+                          disabled={idx === 0}
+                        >
+                          ↑
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleMoveClass(classItem.originalIndex, 'down')}
+                          disabled={idx === classesForForm.length - 1}
+                        >
+                          ↓
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => handleRemoveClass(classItem.originalIndex)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Tiada kelas ditambah. Tambah kelas untuk mula.
+          </p>
+        )}
+
+        <Button onClick={handleSaveClassStructure} disabled={classStructure.length === 0}>
+          <Save className="w-4 h-4 mr-2" />
+          Simpan Struktur Kelas
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -312,225 +506,52 @@ const Settings = () => {
           </Card>
         </motion.div>
 
-        {/* Change Password */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-primary" />
-                Tukar Kata Laluan
-              </CardTitle>
-              <CardDescription>
-                Kemaskini kata laluan akaun anda
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="new-password">Kata Laluan Baru</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="new-password"
-                    type={showNewPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={passwordForm.newPassword}
-                    onChange={(e) =>
-                      setPasswordForm({ ...passwordForm, newPassword: e.target.value })
-                    }
-                    className="pl-9 pr-9"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  >
-                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Sahkan Kata Laluan</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) =>
-                      setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
-                    }
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-              <Button onClick={handleChangePassword} disabled={isLoading}>
-                <Save className="w-4 h-4 mr-2" />
-                Tukar Kata Laluan
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Meeting Settings - Only for Ketua Penasihat */}
+        {/* Ketua Penasihat Settings with Tabs */}
         {role === 'ketua_penasihat' && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.15 }}
           >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Tetapan Perjumpaan
-                </CardTitle>
-                <CardDescription>
-                  Tetapkan bilangan perjumpaan untuk sesi ini
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="total-meetings">Jumlah Perjumpaan</Label>
-                  <div className="flex items-center gap-4">
-                    <Input
-                      id="total-meetings"
-                      type="number"
-                      min={1}
-                      max={52}
-                      value={totalMeetings}
-                      onChange={(e) => setTotalMeetings(parseInt(e.target.value) || 12)}
-                      className="w-24"
-                    />
-                    <span className="text-sm text-muted-foreground">perjumpaan setahun</span>
-                  </div>
-                </div>
-                <Button onClick={handleSaveMeetings}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Simpan Tetapan
-                </Button>
-              </CardContent>
-            </Card>
+            <Tabs defaultValue="password" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="password" className="text-xs sm:text-sm">
+                  <Key className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Kata Laluan</span>
+                  <span className="sm:hidden">Laluan</span>
+                </TabsTrigger>
+                <TabsTrigger value="meetings" className="text-xs sm:text-sm">
+                  <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Perjumpaan</span>
+                  <span className="sm:hidden">Jumpa</span>
+                </TabsTrigger>
+                <TabsTrigger value="classes" className="text-xs sm:text-sm">
+                  <GraduationCap className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Struktur Kelas</span>
+                  <span className="sm:hidden">Kelas</span>
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="password">
+                {renderPasswordSection()}
+              </TabsContent>
+              <TabsContent value="meetings">
+                {renderMeetingsSection()}
+              </TabsContent>
+              <TabsContent value="classes">
+                {renderClassStructureSection()}
+              </TabsContent>
+            </Tabs>
           </motion.div>
         )}
 
-        {/* Class Structure Settings - Only for Guru */}
-        {role === 'guru' && (
+        {/* Non-ketua roles: Just password section */}
+        {role !== 'ketua_penasihat' && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.15 }}
           >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-primary" />
-                  Struktur Kelas
-                </CardTitle>
-                <CardDescription>
-                  Tetapkan senarai kelas mengikut tingkatan dan susunan
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Add new class */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Select
-                    value={newClass.form_level}
-                    onValueChange={(val) => setNewClass({ ...newClass, form_level: val })}
-                  >
-                    <SelectTrigger className="w-full sm:w-32">
-                      <SelectValue placeholder="Tingkatan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5].map((num) => (
-                        <SelectItem key={num} value={num.toString()}>
-                          Tingkatan {num}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    placeholder="Nama kelas (cth: Bestari)"
-                    value={newClass.class_name}
-                    onChange={(e) => setNewClass({ ...newClass, class_name: e.target.value })}
-                    className="flex-1"
-                  />
-                  <Button onClick={handleAddClass} size="icon">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Display classes grouped by form level */}
-                {classStructure.length > 0 ? (
-                  <div className="space-y-4">
-                    {[1, 2, 3, 4, 5].map((formLevel) => {
-                      const classesForForm = classStructure
-                        .map((c, idx) => ({ ...c, originalIndex: idx }))
-                        .filter(c => c.form_level === formLevel);
-                      
-                      if (classesForForm.length === 0) return null;
-                      
-                      return (
-                        <div key={formLevel} className="space-y-2">
-                          <Label className="text-sm font-medium">Tingkatan {formLevel}</Label>
-                          <div className="space-y-1">
-                            {classesForForm.map((classItem, idx) => (
-                              <div
-                                key={classItem.originalIndex}
-                                className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg"
-                              >
-                                <GripVertical className="w-4 h-4 text-muted-foreground" />
-                                <span className="flex-1 text-sm">{classItem.class_name}</span>
-                                <span className="text-xs text-muted-foreground">#{idx + 1}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => handleMoveClass(classItem.originalIndex, 'up')}
-                                  disabled={idx === 0}
-                                >
-                                  ↑
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => handleMoveClass(classItem.originalIndex, 'down')}
-                                  disabled={idx === classesForForm.length - 1}
-                                >
-                                  ↓
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-destructive hover:text-destructive"
-                                  onClick={() => handleRemoveClass(classItem.originalIndex)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Tiada kelas ditambah. Tambah kelas untuk mula.
-                  </p>
-                )}
-
-                <Button onClick={handleSaveClassStructure} disabled={classStructure.length === 0}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Simpan Struktur Kelas
-                </Button>
-              </CardContent>
-            </Card>
+            {renderPasswordSection()}
           </motion.div>
         )}
       </div>

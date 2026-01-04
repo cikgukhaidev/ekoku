@@ -84,10 +84,42 @@ const Students = () => {
   const fetchClassStructure = async () => {
     if (!user?.id) return;
     
+    // Fetch class structure from ketua_penasihat for the same school
+    // First get current user's school_id
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('school_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    if (!profileData?.school_id) return;
+    
+    // Get ketua_penasihat user_id for this school
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('school_id', profileData.school_id);
+    
+    if (!profilesData || profilesData.length === 0) return;
+    
+    const userIds = profilesData.map(p => p.user_id);
+    
+    // Find ketua_penasihat role among these users
+    const { data: ketuaRole } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .in('user_id', userIds)
+      .eq('role', 'ketua_penasihat')
+      .limit(1)
+      .maybeSingle();
+    
+    if (!ketuaRole) return;
+    
+    // Fetch class structure from ketua_penasihat's settings
     const { data } = await supabase
       .from('teacher_settings')
       .select('class_structure')
-      .eq('user_id', user.id)
+      .eq('user_id', ketuaRole.user_id)
       .maybeSingle();
     
     if (data?.class_structure && Array.isArray(data.class_structure)) {
