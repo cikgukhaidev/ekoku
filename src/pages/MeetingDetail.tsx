@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Calendar, Check, CheckCircle2, XCircle, 
-  AlertCircle, Save, CalendarDays
+  Save, CalendarDays
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ import { ms } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { logActivity } from '@/lib/activityLogger';
 
-type AttendanceStatus = 'hadir' | 'tidak_hadir' | 'lewat';
+type AttendanceStatus = 'hadir' | 'tidak_hadir';
 
 interface Meeting {
   id: string;
@@ -254,9 +254,8 @@ const MeetingDetail = () => {
 
   const toggleStatus = (studentId: string) => {
     const currentStatus = attendance[studentId] || 'hadir';
-    const statusOrder: AttendanceStatus[] = ['hadir', 'lewat', 'tidak_hadir'];
-    const currentIndex = statusOrder.indexOf(currentStatus);
-    const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+    // Toggle between hadir and tidak_hadir only
+    const nextStatus: AttendanceStatus = currentStatus === 'hadir' ? 'tidak_hadir' : 'hadir';
     setAttendance((prev) => ({ ...prev, [studentId]: nextStatus }));
   };
 
@@ -278,8 +277,6 @@ const MeetingDetail = () => {
         return <CheckCircle2 className="w-5 h-5 text-green-600" />;
       case 'tidak_hadir':
         return <XCircle className="w-5 h-5 text-red-600" />;
-      case 'lewat':
-        return <AlertCircle className="w-5 h-5 text-yellow-600" />;
     }
   };
 
@@ -287,12 +284,10 @@ const MeetingDetail = () => {
     const styles = {
       hadir: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
       tidak_hadir: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-      lewat: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
     };
     const labels = {
       hadir: 'Hadir',
       tidak_hadir: 'Tidak Hadir',
-      lewat: 'Lewat',
     };
     return (
       <span className={cn('text-xs px-2 py-1 rounded-full font-medium', styles[status])}>
@@ -303,7 +298,6 @@ const MeetingDetail = () => {
 
   const attendanceStats = {
     hadir: Object.values(attendance).filter(s => s === 'hadir').length,
-    lewat: Object.values(attendance).filter(s => s === 'lewat').length,
     tidak_hadir: Object.values(attendance).filter(s => s === 'tidak_hadir').length,
   };
 
@@ -404,14 +398,10 @@ const MeetingDetail = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <div className="bg-green-50 dark:bg-green-950 rounded-lg p-2 text-center">
               <p className="text-lg font-bold text-green-700 dark:text-green-300">{attendanceStats.hadir}</p>
               <p className="text-xs text-green-600 dark:text-green-400">Hadir</p>
-            </div>
-            <div className="bg-yellow-50 dark:bg-yellow-950 rounded-lg p-2 text-center">
-              <p className="text-lg font-bold text-yellow-700 dark:text-yellow-300">{attendanceStats.lewat}</p>
-              <p className="text-xs text-yellow-600 dark:text-yellow-400">Lewat</p>
             </div>
             <div className="bg-red-50 dark:bg-red-950 rounded-lg p-2 text-center">
               <p className="text-lg font-bold text-red-700 dark:text-red-300">{attendanceStats.tidak_hadir}</p>

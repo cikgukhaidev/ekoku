@@ -20,7 +20,6 @@ interface Meeting {
 
 interface AttendanceStats {
   hadir: number;
-  lewat: number;
   tidak_hadir: number;
 }
 
@@ -62,7 +61,6 @@ const Meetings = () => {
         if (attendanceData) {
           statsMap[meeting.id] = {
             hadir: attendanceData.filter(a => a.status === 'hadir').length,
-            lewat: attendanceData.filter(a => a.status === 'lewat').length,
             tidak_hadir: attendanceData.filter(a => a.status === 'tidak_hadir').length,
           };
         }
@@ -176,7 +174,7 @@ const Meetings = () => {
                   )}
 
                   {/* Attendance mini stats */}
-                  {stats && (stats.hadir > 0 || stats.lewat > 0 || stats.tidak_hadir > 0) && (
+                  {stats && (stats.hadir > 0 || stats.tidak_hadir > 0) && (
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-[9px] text-green-600">{stats.hadir}</span>
                       <span className="text-[9px] text-muted-foreground">/</span>
