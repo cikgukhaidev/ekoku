@@ -136,11 +136,11 @@ const EditSchool = () => {
         logoUrl = null;
       }
 
-      // Update school
+      // Update school with uppercase name
       const { error } = await supabase
         .from('schools')
         .update({
-          name: schoolName.trim(),
+          name: schoolName.trim().toUpperCase(),
           logo_url: logoUrl,
         })
         .eq('id', schoolId);
