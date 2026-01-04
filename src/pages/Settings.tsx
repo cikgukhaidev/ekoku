@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Lock, Save, Settings as SettingsIcon, Key, Calendar, GraduationCap, Plus, Trash2, GripVertical } from 'lucide-react';
+import { Eye, EyeOff, Lock, Save, Settings as SettingsIcon, Key, Calendar, GraduationCap, Plus, Trash2, GripVertical, BookOpen, Check } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,26 @@ const Settings = () => {
   const [totalMeetings, setTotalMeetings] = useState(12);
   const [classNames, setClassNames] = useState<string[]>([]);
   const [newClassName, setNewClassName] = useState('');
+  const [sessions, setSessions] = useState<{ id: string; year: number; is_active: boolean }[]>([]);
+  const [newSessionYear, setNewSessionYear] = useState(new Date().getFullYear());
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+
+  const fetchSessions = async () => {
+    if (!profile?.school_id) return;
+    
+    setSessionsLoading(true);
+    const { data, error } = await supabase
+      .from('academic_sessions')
+      .select('id, year, is_active')
+      .eq('school_id', profile.school_id)
+      .eq('is_archived', false)
+      .order('year', { ascending: false });
+    
+    if (!error && data) {
+      setSessions(data);
+    }
+    setSessionsLoading(false);
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -60,11 +80,14 @@ const Settings = () => {
             }
           }
         }
+        
+        // Fetch sessions for ketua_penasihat
+        fetchSessions();
       }
     };
 
     fetchSettings();
-  }, [user, role]);
+  }, [user, role, profile?.school_id]);
 
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -229,6 +252,92 @@ const Settings = () => {
         description: 'Struktur kelas berjaya disimpan',
       });
     }
+  };
+
+  const handleCreateSession = async () => {
+    if (!profile?.school_id) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Sekolah tidak dijumpai',
+      });
+      return;
+    }
+
+    // Check if year already exists
+    if (sessions.some(s => s.year === newSessionYear)) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: `Sesi ${newSessionYear} sudah wujud`,
+      });
+      return;
+    }
+
+    setSessionsLoading(true);
+
+    // Deactivate other sessions first
+    await supabase
+      .from('academic_sessions')
+      .update({ is_active: false })
+      .eq('school_id', profile.school_id);
+
+    // Create new session
+    const { error } = await supabase
+      .from('academic_sessions')
+      .insert({
+        school_id: profile.school_id,
+        year: newSessionYear,
+        is_active: true,
+      });
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Gagal mencipta sesi akademik',
+      });
+    } else {
+      toast({
+        title: 'Berjaya',
+        description: `Sesi ${newSessionYear} berjaya dicipta`,
+      });
+      fetchSessions();
+    }
+    setSessionsLoading(false);
+  };
+
+  const handleSetActiveSession = async (sessionId: string) => {
+    if (!profile?.school_id) return;
+
+    setSessionsLoading(true);
+
+    // Deactivate all sessions
+    await supabase
+      .from('academic_sessions')
+      .update({ is_active: false })
+      .eq('school_id', profile.school_id);
+
+    // Activate selected session
+    const { error } = await supabase
+      .from('academic_sessions')
+      .update({ is_active: true })
+      .eq('id', sessionId);
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Gagal mengaktifkan sesi',
+      });
+    } else {
+      toast({
+        title: 'Berjaya',
+        description: 'Sesi akademik berjaya diaktifkan',
+      });
+      fetchSessions();
+    }
+    setSessionsLoading(false);
   };
 
   const renderPasswordSection = () => (
@@ -408,6 +517,85 @@ const Settings = () => {
     </Card>
   );
 
+  const renderSessionSection = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-primary" />
+          Sesi Akademik
+        </CardTitle>
+        <CardDescription>
+          Cipta dan urus sesi akademik sekolah
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Create new session */}
+        <div className="flex gap-3 items-end">
+          <div className="space-y-2 flex-1">
+            <Label>Tahun Sesi Baru</Label>
+            <Input
+              type="number"
+              min={2020}
+              max={2100}
+              value={newSessionYear}
+              onChange={(e) => setNewSessionYear(parseInt(e.target.value) || new Date().getFullYear())}
+            />
+          </div>
+          <Button onClick={handleCreateSession} disabled={sessionsLoading}>
+            <Plus className="w-4 h-4 mr-2" />
+            Cipta Sesi
+          </Button>
+        </div>
+
+        {/* List sessions */}
+        {sessionsLoading ? (
+          <div className="flex justify-center py-4">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : sessions.length > 0 ? (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Senarai Sesi</Label>
+            <div className="space-y-2">
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                    session.is_active 
+                      ? 'bg-primary/10 border-primary' 
+                      : 'bg-muted/50 border-border'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{session.year}</span>
+                    {session.is_active && (
+                      <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
+                        Aktif
+                      </span>
+                    )}
+                  </div>
+                  {!session.is_active && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSetActiveSession(session.id)}
+                    >
+                      <Check className="w-4 h-4 mr-1" />
+                      Aktifkan
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Tiada sesi akademik. Cipta sesi pertama untuk membolehkan guru menambah pelajar.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -464,8 +652,13 @@ const Settings = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <Tabs defaultValue="password" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-4">
+            <Tabs defaultValue="session" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 mb-4">
+                <TabsTrigger value="session" className="text-xs sm:text-sm">
+                  <BookOpen className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Sesi</span>
+                  <span className="sm:hidden">Sesi</span>
+                </TabsTrigger>
                 <TabsTrigger value="password" className="text-xs sm:text-sm">
                   <Key className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Kata Laluan</span>
@@ -482,6 +675,9 @@ const Settings = () => {
                   <span className="sm:hidden">Kelas</span>
                 </TabsTrigger>
               </TabsList>
+              <TabsContent value="session">
+                {renderSessionSection()}
+              </TabsContent>
               <TabsContent value="password">
                 {renderPasswordSection()}
               </TabsContent>
