@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { School, Plus, Users, MoreVertical, Trash2, Edit } from 'lucide-react';
+import { School, Plus, Users, MoreVertical, Trash2, Edit, Calendar, Megaphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,8 @@ interface SchoolData {
   name: string;
   logo_url: string | null;
   created_at: string;
+  head_count?: number;
+  teacher_count?: number;
 }
 
 const Schools = () => {
@@ -39,7 +42,8 @@ const Schools = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchSchools = async () => {
-    const { data, error } = await supabase
+    // Fetch schools
+    const { data: schoolsData, error } = await supabase
       .from('schools')
       .select('*')
       .order('name', { ascending: true });
@@ -51,9 +55,36 @@ const Schools = () => {
         title: 'Ralat',
         description: 'Gagal memuatkan senarai sekolah',
       });
-    } else {
-      setSchools(data || []);
+      setLoading(false);
+      return;
     }
+
+    // For each school, get counts
+    const schoolsWithCounts = await Promise.all(
+      (schoolsData || []).map(async (school) => {
+        // Count heads (ketua_penasihat) for this school
+        const { count: headCount } = await supabase
+          .from('profiles')
+          .select('*, user_roles!inner(role)', { count: 'exact', head: true })
+          .eq('school_id', school.id)
+          .eq('user_roles.role', 'ketua_penasihat');
+
+        // Count teachers (guru) for this school  
+        const { count: teacherCount } = await supabase
+          .from('profiles')
+          .select('*, user_roles!inner(role)', { count: 'exact', head: true })
+          .eq('school_id', school.id)
+          .eq('user_roles.role', 'guru');
+
+        return {
+          ...school,
+          head_count: headCount || 0,
+          teacher_count: teacherCount || 0,
+        };
+      })
+    );
+
+    setSchools(schoolsWithCounts);
     setLoading(false);
   };
 
@@ -97,7 +128,7 @@ const Schools = () => {
           <div>
             <h1 className="font-display text-xl md:text-2xl font-bold">Senarai Sekolah</h1>
             <p className="text-sm text-muted-foreground">
-              Urus sekolah dalam sistem
+              {schools.length} sekolah berdaftar
             </p>
           </div>
           <Button onClick={() => navigate('/schools/add')} className="hidden md:flex">
@@ -121,7 +152,7 @@ const Schools = () => {
             <School className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-semibold text-lg">Tiada Sekolah</h3>
             <p className="text-muted-foreground text-sm mt-1">
-              Tambah sekolah pertama melalui butang di atas
+              Tambah sekolah pertama untuk bermula
             </p>
             <Button onClick={() => navigate('/schools/add')} className="mt-4">
               <Plus className="w-4 h-4 mr-2" />
@@ -137,60 +168,88 @@ const Schools = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="overflow-hidden hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      {/* Logo */}
-                      <div className="w-16 h-16 rounded-lg bg-accent flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {school.logo_url ? (
-                          <img
-                            src={school.logo_url}
-                            alt={school.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <School className="w-8 h-8 text-muted-foreground" />
-                        )}
+                <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
+                  <CardContent className="p-0">
+                    {/* Header with logo */}
+                    <div className="p-4 border-b border-border bg-accent/30">
+                      <div className="flex items-start gap-4">
+                        {/* Logo */}
+                        <div className="w-16 h-16 rounded-xl bg-background flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm border border-border">
+                          {school.logo_url ? (
+                            <img
+                              src={school.logo_url}
+                              alt={school.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <School className="w-8 h-8 text-muted-foreground" />
+                          )}
+                        </div>
+
+                        {/* Name & Actions */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-base leading-tight line-clamp-2">
+                            {school.name}
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            <Calendar className="w-3 h-3 inline mr-1" />
+                            {new Date(school.created_at).toLocaleDateString('ms-MY', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </p>
+                        </div>
+
+                        {/* Menu */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/schools/${school.id}/edit`)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit Sekolah
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setDeleteId(school.id)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Padam
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="gap-1">
+                          <Users className="w-3 h-3" />
+                          {school.head_count} Ketua
+                        </Badge>
+                        <Badge variant="outline" className="gap-1">
+                          <Users className="w-3 h-3" />
+                          {school.teacher_count} Guru
+                        </Badge>
                       </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-base truncate">{school.name}</h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Ditambah: {new Date(school.created_at).toLocaleDateString('ms-MY')}
-                        </p>
+                      {/* Quick Actions */}
+                      <div className="flex gap-2">
                         <Button
-                          variant="link"
+                          variant="outline"
                           size="sm"
-                          className="p-0 h-auto text-xs text-primary mt-2"
+                          className="flex-1 text-xs"
                           onClick={() => navigate(`/schools/${school.id}/heads`)}
                         >
                           <Users className="w-3 h-3 mr-1" />
-                          Urus Ketua Penasihat
+                          Urus Ketua
                         </Button>
                       </div>
-
-                      {/* Actions */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/schools/${school.id}/edit`)}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setDeleteId(school.id)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Padam
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     </div>
                   </CardContent>
                 </Card>
@@ -206,7 +265,7 @@ const Schools = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Padam Sekolah?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak boleh dibatalkan. Semua data berkaitan sekolah ini akan dipadam.
+              Tindakan ini tidak boleh dibatalkan. Semua data berkaitan sekolah ini akan dipadam termasuk ketua penasihat dan guru.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

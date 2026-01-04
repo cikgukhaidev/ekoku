@@ -1,38 +1,67 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, School, Upload, Save, X } from 'lucide-react';
+import { ArrowLeft, School, Upload, Save, X, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { resizeImage, formatFileSize } from '@/lib/imageUtils';
 
 const AddSchool = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [schoolName, setSchoolName] = useState('');
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoFile, setLogoFile] = useState<Blob | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [originalSize, setOriginalSize] = useState<number>(0);
+  const [resizedSize, setResizedSize] = useState<number>(0);
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setLogoFile(file);
+    if (!file) return;
+
+    setIsResizing(true);
+    setOriginalSize(file.size);
+
+    try {
+      // Resize image to 256x256 max
+      const resizedBlob = await resizeImage(file, 256, 0.85);
+      setResizedSize(resizedBlob.size);
+      setLogoFile(resizedBlob);
+      
+      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(resizedBlob);
+
+      toast({
+        title: 'Logo diproses',
+        description: `Saiz: ${formatFileSize(file.size)} → ${formatFileSize(resizedBlob.size)}`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Gagal memproses gambar',
+      });
+    } finally {
+      setIsResizing(false);
     }
   };
 
   const removeLogo = () => {
     setLogoFile(null);
     setLogoPreview(null);
+    setOriginalSize(0);
+    setResizedSize(0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,12 +83,13 @@ const AddSchool = () => {
 
       // Upload logo if provided
       if (logoFile) {
-        const fileExt = logoFile.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
+        const fileName = `${Date.now()}.jpg`;
 
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('school-logos')
-          .upload(fileName, logoFile);
+          .upload(fileName, logoFile, {
+            contentType: 'image/jpeg',
+          });
 
         if (uploadError) throw uploadError;
 
@@ -131,6 +161,9 @@ const AddSchool = () => {
                 <School className="w-5 h-5 text-primary" />
                 Maklumat Sekolah
               </CardTitle>
+              <CardDescription>
+                Logo akan dioptimumkan secara automatik (256x256px)
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -149,29 +182,47 @@ const AddSchool = () => {
                 <div className="space-y-2">
                   <Label>Logo Sekolah (Pilihan)</Label>
                   {logoPreview ? (
-                    <div className="relative w-32 h-32">
-                      <img
-                        src={logoPreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover rounded-lg border border-border"
-                      />
-                      <button
-                        type="button"
-                        onClick={removeLogo}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                    <div className="space-y-3">
+                      <div className="relative w-32 h-32">
+                        <img
+                          src={logoPreview}
+                          alt="Preview"
+                          className="w-full h-full object-cover rounded-lg border border-border"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeLogo}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        <ImageIcon className="w-3 h-3 inline mr-1" />
+                        Saiz asal: {formatFileSize(originalSize)} → {formatFileSize(resizedSize)}
+                      </p>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
-                      <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                      <span className="text-xs text-muted-foreground">Muat naik</span>
+                    <label className={`flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors ${isResizing ? 'opacity-50' : ''}`}>
+                      {isResizing ? (
+                        <>
+                          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-2" />
+                          <span className="text-xs text-muted-foreground">Memproses...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                          <span className="text-xs text-muted-foreground text-center px-2">
+                            Muat naik logo
+                          </span>
+                        </>
+                      )}
                       <input
                         type="file"
                         accept="image/*"
                         onChange={handleLogoChange}
                         className="hidden"
+                        disabled={isResizing}
                       />
                     </label>
                   )}
@@ -186,7 +237,7 @@ const AddSchool = () => {
                   >
                     Batal
                   </Button>
-                  <Button type="submit" disabled={isLoading}>
+                  <Button type="submit" disabled={isLoading || isResizing}>
                     <Save className="w-4 h-4 mr-2" />
                     {isLoading ? 'Menyimpan...' : 'Simpan'}
                   </Button>
