@@ -158,6 +158,10 @@ const Auth = () => {
             <p className="text-muted-foreground mt-2">
               Log masuk untuk mengurus aktiviti kokurikulum anda
             </p>
+            <p className="text-sm mt-3">
+              Ingin mencuba sistem ini? Hubungi{' '}
+              <span className="text-red-500 font-semibold">@khairanhadafi (Telegram)</span>
+            </p>
           </div>
 
           <div className="bg-card rounded-2xl shadow-lg border border-border p-6">
@@ -293,16 +297,6 @@ const Auth = () => {
             </DialogContent>
           </Dialog>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 text-center"
-          >
-            <p className="text-sm text-muted-foreground">
-              Tiada akaun? Sila hubungi pentadbir sekolah anda.
-            </p>
-          </motion.div>
         </motion.div>
       </main>
 
