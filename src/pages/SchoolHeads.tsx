@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logActivity } from '@/lib/activityLogger';
 
 interface HeadData {
   id: string;
@@ -163,12 +164,27 @@ const SchoolHeads = () => {
       .eq('role', 'ketua_penasihat');
 
     if (roleError) {
+      await logActivity({
+        actionType: 'error',
+        entityType: 'user',
+        entityId: head.id,
+        description: `Gagal memadam ketua penasihat: ${head.full_name}`,
+        errorMessage: roleError.message,
+      });
+
       toast({
         variant: 'destructive',
         title: 'Ralat',
         description: 'Gagal memadam ketua penasihat',
       });
     } else {
+      await logActivity({
+        actionType: 'delete',
+        entityType: 'user',
+        entityId: head.id,
+        description: `Memadam ketua penasihat: ${head.full_name} (${head.email})`,
+      });
+
       toast({
         title: 'Berjaya',
         description: 'Ketua penasihat berjaya dipadam',
@@ -227,6 +243,14 @@ const SchoolHeads = () => {
         throw profileError;
       }
 
+      await logActivity({
+        actionType: 'update',
+        entityType: 'user',
+        entityId: editHead.id,
+        description: `Mengemaskini ketua penasihat: ${editName.trim()} (${editEmail.trim()})`,
+        details: { full_name: editName.trim(), email: editEmail.trim() },
+      });
+
       toast({
         title: 'Berjaya',
         description: 'Maklumat berjaya dikemaskini',
@@ -236,6 +260,15 @@ const SchoolHeads = () => {
       fetchData();
     } catch (error: any) {
       console.error('Error updating head:', error);
+
+      await logActivity({
+        actionType: 'error',
+        entityType: 'user',
+        entityId: editHead.id,
+        description: `Gagal mengemaskini ketua penasihat: ${editName.trim()}`,
+        errorMessage: error.message,
+      });
+
       toast({
         variant: 'destructive',
         title: 'Ralat',

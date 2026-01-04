@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logActivity } from '@/lib/activityLogger';
 
 interface SchoolData {
   id: string;
@@ -98,6 +99,13 @@ const AddSchoolHead = () => {
       if (fnError) throw fnError;
       if (result?.error) throw new Error(result.error);
 
+      await logActivity({
+        actionType: 'create',
+        entityType: 'user',
+        description: `Menambah ketua penasihat: ${fullName.trim()} (${email.trim()})`,
+        details: { full_name: fullName.trim(), email: email.trim(), school_id: schoolId, role: 'ketua_penasihat' },
+      });
+
       toast({
         title: 'Berjaya',
         description: 'Ketua penasihat berjaya ditambah',
@@ -106,6 +114,14 @@ const AddSchoolHead = () => {
       navigate(`/schools/${schoolId}/heads`);
     } catch (error: any) {
       console.error('Error creating head:', error);
+
+      await logActivity({
+        actionType: 'error',
+        entityType: 'user',
+        description: `Gagal menambah ketua penasihat: ${fullName.trim()} (${email.trim()})`,
+        errorMessage: error.message,
+      });
+
       toast({
         variant: 'destructive',
         title: 'Ralat',

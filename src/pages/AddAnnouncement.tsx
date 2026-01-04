@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { logActivity } from '@/lib/activityLogger';
 
 const AddAnnouncement = () => {
   const navigate = useNavigate();
@@ -37,15 +38,23 @@ const AddAnnouncement = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.from('announcements').insert({
+      const { data: newAnnouncement, error } = await supabase.from('announcements').insert({
         title: title.trim(),
         content: content.trim(),
         author_id: user?.id,
         school_id: role === 'superadmin' ? null : profile?.school_id,
         is_global: role === 'superadmin' ? isGlobal : false,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      await logActivity({
+        actionType: 'create',
+        entityType: 'announcement',
+        entityId: newAnnouncement?.id,
+        description: `Mencipta pengumuman: ${title.trim()}`,
+        details: { title: title.trim(), is_global: role === 'superadmin' ? isGlobal : false },
+      });
 
       toast({
         title: 'Berjaya',
@@ -54,6 +63,13 @@ const AddAnnouncement = () => {
 
       navigate('/announcements');
     } catch (error: any) {
+      await logActivity({
+        actionType: 'error',
+        entityType: 'announcement',
+        description: `Gagal mencipta pengumuman: ${title.trim()}`,
+        errorMessage: error.message,
+      });
+
       toast({
         variant: 'destructive',
         title: 'Ralat',
