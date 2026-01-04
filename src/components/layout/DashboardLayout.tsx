@@ -11,8 +11,10 @@ interface DashboardLayoutProps {
 }
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const { user, loading, mustChangePassword } = useAuth();
+  const { user, profile, loading, mustChangePassword } = useAuth();
   const navigate = useNavigate();
+
+  const isDemoAccount = !!profile?.is_demo || !!user?.email?.endsWith('@demo.com');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -21,10 +23,10 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    if (!loading && user && mustChangePassword) {
+    if (!loading && user && mustChangePassword && !isDemoAccount) {
       navigate('/change-password');
     }
-  }, [user, loading, mustChangePassword, navigate]);
+  }, [user, loading, mustChangePassword, isDemoAccount, navigate]);
 
   if (loading) {
     return <LoadingScreen />;
