@@ -216,6 +216,24 @@ const AttendanceReport = () => {
     );
   }
 
+  // Get tingkatan label for PDF
+  const getTingkatanLabel = () => {
+    if (selectedForm === 'all') {
+      // Show actual form levels e.g., "Tingkatan 1, 2 dan 3"
+      if (formLevels.length === 0) return '-';
+      if (formLevels.length === 1) return `Tingkatan ${formLevels[0]}`;
+      const lastLevel = formLevels[formLevels.length - 1];
+      const otherLevels = formLevels.slice(0, -1);
+      return `Tingkatan ${otherLevels.join(', ')} dan ${lastLevel}`;
+    }
+    return `Tingkatan ${selectedForm}`;
+  };
+
+  // Format class name with space e.g., "1 ZUHAL" instead of "1ZUHAL"
+  const formatClassName = (formLevel: number, className: string) => {
+    return `${formLevel} ${className.toUpperCase()}`;
+  };
+
   // Printable content component
   const PrintableContent = () => (
     <div ref={printRef} className="print-content bg-white text-black p-6">
@@ -237,8 +255,8 @@ const AttendanceReport = () => {
         </div>
         <div className="border-t-2 border-black mt-2 pt-2">
           <p className="text-sm">
-            <span className="font-semibold">Unit:</span> {profile?.unit_name || '-'} | 
-            <span className="font-semibold ml-2">Tingkatan:</span> {selectedForm === 'all' ? 'Semua' : selectedForm} |
+            <span className="font-bold">Unit:</span> <span className="font-bold uppercase">{profile?.unit_name || '-'}</span> | 
+            <span className="font-semibold ml-2">Tingkatan:</span> {getTingkatanLabel()} |
             <span className="font-semibold ml-2">Sesi:</span> {new Date().getFullYear()}
           </p>
         </div>
@@ -249,15 +267,14 @@ const AttendanceReport = () => {
         <thead>
           <tr>
             <th className="border border-black p-1 text-center w-6">Bil</th>
-            <th className="border border-black p-1 text-left min-w-[100px]">Nama Pelajar</th>
-            <th className="border border-black p-1 text-center w-10">Kelas</th>
+            <th className="border border-black p-1 text-left min-w-[120px] text-[11px]">Nama Pelajar</th>
+            <th className="border border-black p-1 text-center w-14">Kelas</th>
             {Array.from({ length: totalMeetings }, (_, i) => (
               <th key={i + 1} className="border border-black p-1 text-center w-5">
                 {i + 1}
               </th>
             ))}
-            <th className="border border-black p-1 text-center w-8">Jum</th>
-            <th className="border border-black p-1 text-center w-8">%</th>
+            <th className="border border-black p-1 text-center w-10">Jumlah</th>
           </tr>
         </thead>
         <tbody>
@@ -279,14 +296,12 @@ const AttendanceReport = () => {
               }
             });
             
-            const percentage = totalRecorded > 0 ? Math.round((hadirCount / totalRecorded) * 100) : 0;
-            
             return (
               <tr key={student.id}>
                 <td className="border border-black p-1 text-center">{index + 1}</td>
-                <td className="border border-black p-1">{toTitleCase(student.full_name)}</td>
+                <td className="border border-black p-1 text-[11px]">{toTitleCase(student.full_name)}</td>
                 <td className="border border-black p-1 text-center">
-                  {student.form_level}{student.class_name.toUpperCase()}
+                  {formatClassName(student.form_level, student.class_name)}
                 </td>
                 {Array.from({ length: totalMeetings }, (_, i) => {
                   const meetingNum = i + 1;
@@ -300,7 +315,6 @@ const AttendanceReport = () => {
                   );
                 })}
                 <td className="border border-black p-1 text-center font-semibold">{hadirCount}/{totalRecorded}</td>
-                <td className="border border-black p-1 text-center font-semibold">{percentage}%</td>
               </tr>
             );
           })}
@@ -441,7 +455,7 @@ const AttendanceReport = () => {
                             {toTitleCase(student.full_name)}
                           </TableCell>
                           <TableCell className="text-center px-1 py-1 text-[10px]">
-                            {student.form_level}{student.class_name.toUpperCase()}
+                            {student.form_level} {student.class_name.toUpperCase()}
                           </TableCell>
                           {Array.from({ length: totalMeetings }, (_, i) => {
                             const meetingNum = i + 1;
