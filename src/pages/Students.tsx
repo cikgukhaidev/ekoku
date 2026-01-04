@@ -35,10 +35,7 @@ interface Student {
   is_active: boolean;
 }
 
-interface ClassItem {
-  form_level: number;
-  class_name: string;
-}
+// Class names list (shared across all form levels)
 
 const Students = () => {
   const { user } = useAuth();
@@ -52,7 +49,7 @@ const Students = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [classStructure, setClassStructure] = useState<ClassItem[]>([]);
+  const [classNames, setClassNames] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     full_name: '',
     class_name: '',
@@ -123,7 +120,20 @@ const Students = () => {
       .maybeSingle();
     
     if (data?.class_structure && Array.isArray(data.class_structure)) {
-      setClassStructure(data.class_structure as unknown as ClassItem[]);
+      // Handle both old format (with form_level) and new format (just strings)
+      const classes = data.class_structure as any[];
+      if (classes.length > 0 && typeof classes[0] === 'string') {
+        setClassNames(classes as string[]);
+      } else if (classes.length > 0 && typeof classes[0] === 'object') {
+        // Convert old format to new - extract unique class names in order
+        const uniqueNames: string[] = [];
+        classes.forEach((c: any) => {
+          if (c.class_name && !uniqueNames.includes(c.class_name)) {
+            uniqueNames.push(c.class_name);
+          }
+        });
+        setClassNames(uniqueNames);
+      }
     }
   };
 
@@ -132,15 +142,12 @@ const Students = () => {
     fetchClassStructure();
   }, [user]);
 
-  // Get classes for selected form level from structure
-  const getClassesForForm = (formLevel: string) => {
-    if (!formLevel || formLevel === 'all') return [];
-    return classStructure
-      .filter(c => c.form_level === parseInt(formLevel))
-      .map(c => c.class_name);
+  // Get class names (same for all form levels)
+  const getClassesForForm = () => {
+    return classNames;
   };
 
-  // Sort students by class structure order
+  // Sort students by class order
   const sortStudentsByClassOrder = (studentList: Student[]) => {
     return [...studentList].sort((a, b) => {
       // First sort by form level
@@ -148,12 +155,12 @@ const Students = () => {
         return a.form_level - b.form_level;
       }
       
-      // Then sort by class order from structure
-      const aIndex = classStructure.findIndex(
-        c => c.form_level === a.form_level && c.class_name.toLowerCase() === a.class_name.toLowerCase()
+      // Then sort by class order from classNames list
+      const aIndex = classNames.findIndex(
+        c => c.toLowerCase() === a.class_name.toLowerCase()
       );
-      const bIndex = classStructure.findIndex(
-        c => c.form_level === b.form_level && c.class_name.toLowerCase() === b.class_name.toLowerCase()
+      const bIndex = classNames.findIndex(
+        c => c.toLowerCase() === b.class_name.toLowerCase()
       );
       
       // If both found in structure, sort by structure order
@@ -345,14 +352,14 @@ const Students = () => {
               <SelectItem value="5">Tingkatan 5</SelectItem>
             </SelectContent>
           </Select>
-          {filterForm !== 'all' && getClassesForForm(filterForm).length > 0 && (
+          {filterForm !== 'all' && getClassesForForm().length > 0 && (
             <Select value={filterClass} onValueChange={setFilterClass}>
               <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Kelas" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Kelas</SelectItem>
-                {getClassesForForm(filterForm).map((className, idx) => (
+                {getClassesForForm().map((className, idx) => (
                   <SelectItem key={className} value={className}>
                     {className} (#{idx + 1})
                   </SelectItem>
@@ -468,7 +475,7 @@ const Students = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="class">Kelas</Label>
-                {getClassesForForm(formData.form_level).length > 0 ? (
+                {getClassesForForm().length > 0 ? (
                   <Select
                     value={formData.class_name}
                     onValueChange={(val) => setFormData({ ...formData, class_name: val })}
@@ -477,7 +484,7 @@ const Students = () => {
                       <SelectValue placeholder="Pilih kelas" />
                     </SelectTrigger>
                     <SelectContent>
-                      {getClassesForForm(formData.form_level).map((className) => (
+                      {getClassesForForm().map((className) => (
                         <SelectItem key={className} value={className}>
                           {className}
                         </SelectItem>
@@ -543,7 +550,7 @@ const Students = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-class">Kelas</Label>
-                {getClassesForForm(formData.form_level).length > 0 ? (
+                {getClassesForForm().length > 0 ? (
                   <Select
                     value={formData.class_name}
                     onValueChange={(val) => setFormData({ ...formData, class_name: val })}
@@ -552,7 +559,7 @@ const Students = () => {
                       <SelectValue placeholder="Pilih kelas" />
                     </SelectTrigger>
                     <SelectContent>
-                      {getClassesForForm(formData.form_level).map((className) => (
+                      {getClassesForForm().map((className) => (
                         <SelectItem key={className} value={className}>
                           {className}
                         </SelectItem>
