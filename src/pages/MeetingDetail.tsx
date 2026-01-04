@@ -62,13 +62,9 @@ const MeetingDetail = () => {
 
   const meetingNum = parseInt(meetingNumber || '1');
 
-  // Helper to convert name to Title Case
-  const toTitleCase = (str: string) => {
-    return str
-      .toLowerCase()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+  // Helper to convert name to UPPERCASE
+  const toUpperCase = (str: string) => {
+    return str.toUpperCase();
   };
 
   useEffect(() => {
@@ -428,7 +424,7 @@ const MeetingDetail = () => {
                   <div className="flex items-center gap-3">
                     {getStatusIcon(attendance[student.id] || 'hadir')}
                     <div className="text-left">
-                      <p className="font-medium text-sm">{toTitleCase(student.full_name)}</p>
+                      <p className="font-medium text-sm">{toUpperCase(student.full_name)}</p>
                       <p className="text-xs text-muted-foreground">
                         {student.form_level} {student.class_name.toUpperCase()}
                       </p>

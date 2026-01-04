@@ -91,13 +91,9 @@ const Reports = () => {
     setLoading(false);
   };
 
-  // Helper to convert name to Title Case
-  const toTitleCase = (str: string) => {
-    return str
-      .toLowerCase()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+  // Helper to convert name to UPPERCASE
+  const toUpperCase = (str: string) => {
+    return str.toUpperCase();
   };
 
   // Calculate stats for a meeting
@@ -396,7 +392,7 @@ const Reports = () => {
                     className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950 rounded-lg"
                   >
                     <div>
-                      <p className="font-medium text-sm">{toTitleCase(student.full_name)}</p>
+                      <p className="font-medium text-sm">{toUpperCase(student.full_name)}</p>
                       <p className="text-xs text-muted-foreground">
                         {student.form_level} {student.class_name.toUpperCase()}
                       </p>

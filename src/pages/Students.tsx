@@ -128,13 +128,9 @@ const Students = () => {
     });
   };
 
-  // Helper to convert name to Title Case
-  const toTitleCase = (str: string) => {
-    return str
-      .toLowerCase()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+  // Helper to convert name to UPPERCASE
+  const toUpperCase = (str: string) => {
+    return str.toUpperCase();
   };
 
   const filteredStudents = sortStudentsAlphabetically(
@@ -589,7 +585,7 @@ const Students = () => {
                         {index + 1}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium text-sm">{toTitleCase(student.full_name)}</span>
+                        <span className="font-medium text-sm">{toUpperCase(student.full_name)}</span>
                       </td>
                       <td className="px-4 py-3 text-sm">
                         {student.form_level} {student.class_name.toUpperCase()}
@@ -637,7 +633,7 @@ const Students = () => {
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm leading-tight">{toTitleCase(student.full_name)}</p>
+                    <p className="font-medium text-sm leading-tight">{toUpperCase(student.full_name)}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {student.form_level} {student.class_name.toUpperCase()}
                     </p>
