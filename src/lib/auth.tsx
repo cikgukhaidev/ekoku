@@ -13,6 +13,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   mustChangePassword: boolean;
+  /** Re-fetches profile + role for the current user */
+  refreshUserData: () => Promise<void>;
+  /** Marks first-login password requirement as completed (client state) */
+  markPasswordChanged: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -102,6 +106,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setProfile(null);
     setRole(null);
+    setMustChangePassword(false);
+  };
+
+  const refreshUserData = async () => {
+    if (!user?.id) return;
+    await fetchUserData(user.id);
+  };
+
+  const markPasswordChanged = () => {
+    setMustChangePassword(false);
+    setProfile((prev: any) => (prev ? { ...prev, must_change_password: false } : prev));
   };
 
   return (
@@ -115,6 +130,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signIn,
         signOut,
         mustChangePassword,
+        refreshUserData,
+        markPasswordChanged,
       }}
     >
       {children}
