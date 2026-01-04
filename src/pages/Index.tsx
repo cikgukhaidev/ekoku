@@ -127,7 +127,10 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="p-6 text-center border-t border-border mt-12">
-        <p className="text-sm text-foreground font-medium">Made by MKH</p>
+        <p className="text-sm text-foreground font-medium mb-1">Made by MKH</p>
+        <p className="text-sm text-muted-foreground">
+          © 2026 e-Kokurikulum. Sistem Pengurusan Kokurikulum Sekolah.
+        </p>
       </footer>
     </div>
   );
