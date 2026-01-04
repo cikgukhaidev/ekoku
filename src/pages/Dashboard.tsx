@@ -14,6 +14,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalMeetings: 0,
+    totalMeetingsTarget: 12, // Default, will be fetched from ketua penasihat settings
     attendanceRate: 0,
     totalTeachers: 0,
     totalSchools: 0,
@@ -57,10 +58,47 @@ const Dashboard = () => {
           .from('meetings')
           .select('*', { count: 'exact', head: true });
 
+        // Fetch total meetings target from ketua penasihat of same school
+        let totalMeetingsTarget = 12; // Default
+        if (profile?.school_id) {
+          // Find ketua_penasihat user_id in same school
+          const { data: schoolProfiles } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('school_id', profile.school_id);
+
+          if (schoolProfiles && schoolProfiles.length > 0) {
+            const userIds = schoolProfiles.map(p => p.user_id);
+            
+            // Find which one is ketua_penasihat
+            const { data: ketuaRoles } = await supabase
+              .from('user_roles')
+              .select('user_id')
+              .in('user_id', userIds)
+              .eq('role', 'ketua_penasihat');
+
+            if (ketuaRoles && ketuaRoles.length > 0) {
+              const ketuaUserId = ketuaRoles[0].user_id;
+              
+              // Get their settings
+              const { data: ketuaSettings } = await supabase
+                .from('teacher_settings')
+                .select('total_meetings')
+                .eq('user_id', ketuaUserId)
+                .maybeSingle();
+
+              if (ketuaSettings?.total_meetings) {
+                totalMeetingsTarget = ketuaSettings.total_meetings;
+              }
+            }
+          }
+        }
+
         setStats(prev => ({
           ...prev,
           totalStudents: studentCount || 0,
           totalMeetings: meetingCount || 0,
+          totalMeetingsTarget,
           attendanceRate: 85, // Placeholder
         }));
       }
@@ -118,7 +156,7 @@ const Dashboard = () => {
         />
         <StatCard
           title="Perjumpaan"
-          value={`${stats.totalMeetings}/12`}
+          value={`${stats.totalMeetings}/${stats.totalMeetingsTarget}`}
           icon={<Calendar className="w-6 h-6" />}
           variant="info"
           delay={0.15}
