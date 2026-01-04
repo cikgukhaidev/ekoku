@@ -188,9 +188,9 @@ export default function ActivityLogs() {
             <CardTitle className="text-base">Tapis</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex gap-2">
               <Select value={filterAction} onValueChange={setFilterAction}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[120px] sm:w-[150px] text-xs sm:text-sm">
                   <SelectValue placeholder="Semua Aksi" />
                 </SelectTrigger>
                 <SelectContent>
@@ -206,7 +206,7 @@ export default function ActivityLogs() {
               </Select>
 
               <Select value={filterEntity} onValueChange={setFilterEntity}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[120px] sm:w-[150px] text-xs sm:text-sm">
                   <SelectValue placeholder="Semua Entiti" />
                 </SelectTrigger>
                 <SelectContent>
