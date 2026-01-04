@@ -14,9 +14,11 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import ChangePassword from "./pages/ChangePassword";
 import Schools from "./pages/Schools";
+import AddSchool from "./pages/AddSchool";
 import Teachers from "./pages/Teachers";
 import Heads from "./pages/Heads";
 import Announcements from "./pages/Announcements";
+import AddAnnouncement from "./pages/AddAnnouncement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,9 +41,11 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/schools" element={<Schools />} />
+            <Route path="/schools/add" element={<AddSchool />} />
             <Route path="/teachers" element={<Teachers />} />
             <Route path="/heads" element={<Heads />} />
             <Route path="/announcements" element={<Announcements />} />
+            <Route path="/announcements/add" element={<AddAnnouncement />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

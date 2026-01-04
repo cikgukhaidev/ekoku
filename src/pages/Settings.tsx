@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Lock, Save, Settings as SettingsIcon, Bell, Key, Calendar } from 'lucide-react';
+import { Eye, EyeOff, Lock, Save, Settings as SettingsIcon, Key, Calendar } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
@@ -18,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 
 const Settings = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, role } = useAuth();
   const { toast } = useToast();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -32,7 +31,7 @@ const Settings = () => {
 
   useEffect(() => {
     const fetchSettings = async () => {
-      if (!user?.id) return;
+      if (!user?.id || role !== 'ketua_penasihat') return;
       
       const { data } = await supabase
         .from('teacher_settings')
@@ -46,7 +45,7 @@ const Settings = () => {
     };
 
     fetchSettings();
-  }, [user]);
+  }, [user, role]);
 
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -237,45 +236,47 @@ const Settings = () => {
           </Card>
         </motion.div>
 
-        {/* Meeting Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                Tetapan Perjumpaan
-              </CardTitle>
-              <CardDescription>
-                Tetapkan bilangan perjumpaan untuk sesi ini
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="total-meetings">Jumlah Perjumpaan</Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="total-meetings"
-                    type="number"
-                    min={1}
-                    max={52}
-                    value={totalMeetings}
-                    onChange={(e) => setTotalMeetings(parseInt(e.target.value) || 12)}
-                    className="w-24"
-                  />
-                  <span className="text-sm text-muted-foreground">perjumpaan setahun</span>
+        {/* Meeting Settings - Only for Ketua Penasihat */}
+        {role === 'ketua_penasihat' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Tetapan Perjumpaan
+                </CardTitle>
+                <CardDescription>
+                  Tetapkan bilangan perjumpaan untuk sesi ini
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="total-meetings">Jumlah Perjumpaan</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      id="total-meetings"
+                      type="number"
+                      min={1}
+                      max={52}
+                      value={totalMeetings}
+                      onChange={(e) => setTotalMeetings(parseInt(e.target.value) || 12)}
+                      className="w-24"
+                    />
+                    <span className="text-sm text-muted-foreground">perjumpaan setahun</span>
+                  </div>
                 </div>
-              </div>
-              <Button onClick={handleSaveMeetings}>
-                <Save className="w-4 h-4 mr-2" />
-                Simpan Tetapan
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
+                <Button onClick={handleSaveMeetings}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Simpan Tetapan
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </div>
     </DashboardLayout>
   );
