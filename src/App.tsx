@@ -17,6 +17,7 @@ import Schools from "./pages/Schools";
 import AddSchool from "./pages/AddSchool";
 import EditSchool from "./pages/EditSchool";
 import SchoolHeads from "./pages/SchoolHeads";
+import AddSchoolHead from "./pages/AddSchoolHead";
 import Teachers from "./pages/Teachers";
 import Heads from "./pages/Heads";
 import Announcements from "./pages/Announcements";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/schools/add" element={<AddSchool />} />
             <Route path="/schools/:schoolId/edit" element={<EditSchool />}/>
             <Route path="/schools/:schoolId/heads" element={<SchoolHeads />} />
+            <Route path="/schools/:schoolId/heads/add" element={<AddSchoolHead />} />
             <Route path="/teachers" element={<Teachers />} />
             <Route path="/heads" element={<Heads />} />
             <Route path="/announcements" element={<Announcements />} />
