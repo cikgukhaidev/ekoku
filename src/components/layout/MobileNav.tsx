@@ -36,7 +36,6 @@ export const MobileNav = () => {
     if (role === 'superadmin') {
       items.push(
         { path: '/schools', icon: <School className="w-5 h-5" />, label: 'Sekolah' },
-        { path: '/heads', icon: <Users className="w-5 h-5" />, label: 'Ketua' },
         { path: '/announcements', icon: <Megaphone className="w-5 h-5" />, label: 'Pengumuman' }
       );
     }

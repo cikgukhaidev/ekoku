@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, UserPlus, Calendar, FileText, Megaphone } from 'lucide-react';
+import { Plus, X, UserPlus, Calendar, FileText, Megaphone, School } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface FABAction {
   icon: React.ReactNode;
@@ -15,10 +15,39 @@ export const FloatingActionButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { role } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const getActions = (): FABAction[] => {
     const baseActions: FABAction[] = [];
+    const currentPath = location.pathname;
 
+    // Context-aware actions based on current page
+    if (currentPath === '/schools' && role === 'superadmin') {
+      return [{
+        icon: <School className="w-5 h-5" />,
+        label: 'Tambah Sekolah',
+        onClick: () => navigate('/schools/add'),
+      }];
+    }
+
+    if (currentPath === '/announcements') {
+      if (role === 'superadmin') {
+        return [{
+          icon: <Megaphone className="w-5 h-5" />,
+          label: 'Pengumuman Global',
+          onClick: () => navigate('/announcements/add'),
+        }];
+      }
+      if (role === 'ketua_penasihat') {
+        return [{
+          icon: <Megaphone className="w-5 h-5" />,
+          label: 'Buat Pengumuman',
+          onClick: () => navigate('/announcements/add'),
+        }];
+      }
+    }
+
+    // Default role-based actions for dashboard and other pages
     if (role === 'guru') {
       baseActions.push(
         {
@@ -57,14 +86,9 @@ export const FloatingActionButton = () => {
     if (role === 'superadmin') {
       baseActions.push(
         {
-          icon: <Plus className="w-5 h-5" />,
+          icon: <School className="w-5 h-5" />,
           label: 'Tambah Sekolah',
           onClick: () => navigate('/schools/add'),
-        },
-        {
-          icon: <UserPlus className="w-5 h-5" />,
-          label: 'Tambah Ketua',
-          onClick: () => navigate('/heads/add'),
         },
         {
           icon: <Megaphone className="w-5 h-5" />,
