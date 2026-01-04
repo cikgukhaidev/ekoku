@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 
 export type ActionType = 'create' | 'update' | 'delete' | 'upload' | 'download' | 'error' | 'forward';
-export type EntityType = 'student' | 'session' | 'announcement' | 'meeting' | 'attendance' | 'user' | 'settings';
+export type EntityType = 'student' | 'session' | 'announcement' | 'meeting' | 'attendance' | 'user' | 'settings' | 'school';
 
 interface LogActivityParams {
   actionType: ActionType;
