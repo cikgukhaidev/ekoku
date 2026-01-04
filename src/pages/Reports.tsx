@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   FileText, Users, Calendar, TrendingUp, 
-  AlertTriangle, CheckCircle2, Clock, XCircle 
+  AlertTriangle, CheckCircle2, Clock, XCircle,
+  Table as TableIcon, ChevronRight
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -39,6 +42,7 @@ const COLORS = {
 };
 
 const Reports = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -175,6 +179,32 @@ const Reports = () => {
       </div>
 
       <div className="p-4 md:p-6 space-y-6">
+        {/* Quick Action - Attendance Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card 
+            className="cursor-pointer hover:border-primary transition-colors"
+            onClick={() => navigate('/reports/attendance')}
+          >
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <TableIcon className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">Jadual Kehadiran Penuh</p>
+                  <p className="text-xs text-muted-foreground">
+                    Lihat rekod kehadiran dalam format jadual (untuk cetak PDF)
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Overall Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <motion.div
