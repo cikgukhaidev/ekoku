@@ -35,6 +35,11 @@ interface Student {
   is_active: boolean;
 }
 
+interface ClassItem {
+  form_level: number;
+  class_name: string;
+}
+
 const Students = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -42,10 +47,12 @@ const Students = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterForm, setFilterForm] = useState<string>('all');
+  const [filterClass, setFilterClass] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [classStructure, setClassStructure] = useState<ClassItem[]>([]);
   const [formData, setFormData] = useState({
     full_name: '',
     class_name: '',
@@ -74,17 +81,71 @@ const Students = () => {
     setLoading(false);
   };
 
+  const fetchClassStructure = async () => {
+    if (!user?.id) return;
+    
+    const { data } = await supabase
+      .from('teacher_settings')
+      .select('class_structure')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    if (data?.class_structure && Array.isArray(data.class_structure)) {
+      setClassStructure(data.class_structure as unknown as ClassItem[]);
+    }
+  };
+
   useEffect(() => {
     fetchStudents();
-  }, []);
+    fetchClassStructure();
+  }, [user]);
 
-  const filteredStudents = students.filter((student) => {
-    const matchesSearch = student.full_name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesForm = filterForm === 'all' || student.form_level.toString() === filterForm;
-    return matchesSearch && matchesForm;
-  });
+  // Get classes for selected form level from structure
+  const getClassesForForm = (formLevel: string) => {
+    if (!formLevel || formLevel === 'all') return [];
+    return classStructure
+      .filter(c => c.form_level === parseInt(formLevel))
+      .map(c => c.class_name);
+  };
+
+  // Sort students by class structure order
+  const sortStudentsByClassOrder = (studentList: Student[]) => {
+    return [...studentList].sort((a, b) => {
+      // First sort by form level
+      if (a.form_level !== b.form_level) {
+        return a.form_level - b.form_level;
+      }
+      
+      // Then sort by class order from structure
+      const aIndex = classStructure.findIndex(
+        c => c.form_level === a.form_level && c.class_name.toLowerCase() === a.class_name.toLowerCase()
+      );
+      const bIndex = classStructure.findIndex(
+        c => c.form_level === b.form_level && c.class_name.toLowerCase() === b.class_name.toLowerCase()
+      );
+      
+      // If both found in structure, sort by structure order
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+      // If only one found, put it first
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      // Otherwise sort alphabetically
+      return a.class_name.localeCompare(b.class_name);
+    });
+  };
+
+  const filteredStudents = sortStudentsByClassOrder(
+    students.filter((student) => {
+      const matchesSearch = student.full_name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesForm = filterForm === 'all' || student.form_level.toString() === filterForm;
+      const matchesClass = filterClass === 'all' || student.class_name.toLowerCase() === filterClass.toLowerCase();
+      return matchesSearch && matchesForm && matchesClass;
+    })
+  );
 
   const handleAddStudent = async () => {
     if (!formData.full_name || !formData.class_name) {
@@ -235,7 +296,10 @@ const Students = () => {
               className="pl-9"
             />
           </div>
-          <Select value={filterForm} onValueChange={setFilterForm}>
+          <Select value={filterForm} onValueChange={(val) => {
+            setFilterForm(val);
+            setFilterClass('all'); // Reset class filter when form changes
+          }}>
             <SelectTrigger className="w-full sm:w-40">
               <Filter className="w-4 h-4 mr-2" />
               <SelectValue placeholder="Tingkatan" />
@@ -249,6 +313,21 @@ const Students = () => {
               <SelectItem value="5">Tingkatan 5</SelectItem>
             </SelectContent>
           </Select>
+          {filterForm !== 'all' && getClassesForForm(filterForm).length > 0 && (
+            <Select value={filterClass} onValueChange={setFilterClass}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Kelas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Kelas</SelectItem>
+                {getClassesForForm(filterForm).map((className, idx) => (
+                  <SelectItem key={className} value={className}>
+                    {className} (#{idx + 1})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
 
@@ -357,12 +436,30 @@ const Students = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="class">Kelas</Label>
-                <Input
-                  id="class"
-                  placeholder="cth: Bestari"
-                  value={formData.class_name}
-                  onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-                />
+                {getClassesForForm(formData.form_level).length > 0 ? (
+                  <Select
+                    value={formData.class_name}
+                    onValueChange={(val) => setFormData({ ...formData, class_name: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih kelas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getClassesForForm(formData.form_level).map((className) => (
+                        <SelectItem key={className} value={className}>
+                          {className}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="class"
+                    placeholder="cth: Bestari"
+                    value={formData.class_name}
+                    onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -414,11 +511,29 @@ const Students = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-class">Kelas</Label>
-                <Input
-                  id="edit-class"
-                  value={formData.class_name}
-                  onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-                />
+                {getClassesForForm(formData.form_level).length > 0 ? (
+                  <Select
+                    value={formData.class_name}
+                    onValueChange={(val) => setFormData({ ...formData, class_name: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih kelas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getClassesForForm(formData.form_level).map((className) => (
+                        <SelectItem key={className} value={className}>
+                          {className}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="edit-class"
+                    value={formData.class_name}
+                    onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
+                  />
+                )}
               </div>
             </div>
           </div>

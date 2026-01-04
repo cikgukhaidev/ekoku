@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Lock, Save, Settings as SettingsIcon, Key, Calendar } from 'lucide-react';
+import { Eye, EyeOff, Lock, Save, Settings as SettingsIcon, Key, Calendar, GraduationCap, Plus, Trash2, GripVertical } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,9 +12,21 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+
+interface ClassItem {
+  form_level: number;
+  class_name: string;
+}
 
 const Settings = () => {
   const { user, profile, role, markPasswordChanged } = useAuth();
@@ -28,19 +40,37 @@ const Settings = () => {
     confirmPassword: '',
   });
   const [totalMeetings, setTotalMeetings] = useState(12);
+  const [classStructure, setClassStructure] = useState<ClassItem[]>([]);
+  const [newClass, setNewClass] = useState({ form_level: '1', class_name: '' });
 
   useEffect(() => {
     const fetchSettings = async () => {
-      if (!user?.id || role !== 'ketua_penasihat') return;
+      if (!user?.id) return;
       
-      const { data } = await supabase
-        .from('teacher_settings')
-        .select('total_meetings')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Fetch ketua_penasihat settings
+      if (role === 'ketua_penasihat') {
+        const { data } = await supabase
+          .from('teacher_settings')
+          .select('total_meetings')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (data) {
+          setTotalMeetings(data.total_meetings ?? 12);
+        }
+      }
       
-      if (data) {
-        setTotalMeetings(data.total_meetings);
+      // Fetch guru settings (class structure)
+      if (role === 'guru') {
+        const { data } = await supabase
+          .from('teacher_settings')
+          .select('class_structure')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (data?.class_structure && Array.isArray(data.class_structure)) {
+          setClassStructure(data.class_structure as unknown as ClassItem[]);
+        }
       }
     };
 
@@ -143,6 +173,95 @@ const Settings = () => {
       });
     }
   };
+
+  const handleAddClass = () => {
+    if (!newClass.class_name.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Sila masukkan nama kelas',
+      });
+      return;
+    }
+
+    const exists = classStructure.some(
+      c => c.form_level === parseInt(newClass.form_level) && 
+           c.class_name.toLowerCase() === newClass.class_name.toLowerCase()
+    );
+
+    if (exists) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Kelas ini sudah wujud',
+      });
+      return;
+    }
+
+    setClassStructure([
+      ...classStructure,
+      { form_level: parseInt(newClass.form_level), class_name: newClass.class_name.trim() }
+    ]);
+    setNewClass({ form_level: newClass.form_level, class_name: '' });
+  };
+
+  const handleRemoveClass = (index: number) => {
+    setClassStructure(classStructure.filter((_, i) => i !== index));
+  };
+
+  const handleMoveClass = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= classStructure.length) return;
+    
+    const newStructure = [...classStructure];
+    [newStructure[index], newStructure[newIndex]] = [newStructure[newIndex], newStructure[index]];
+    setClassStructure(newStructure);
+  };
+
+  const handleSaveClassStructure = async () => {
+    if (!user?.id) return;
+
+    const { data: existing } = await supabase
+      .from('teacher_settings')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    let error;
+    if (existing) {
+      const result = await supabase
+        .from('teacher_settings')
+        .update({ class_structure: JSON.parse(JSON.stringify(classStructure)) })
+        .eq('user_id', user.id);
+      error = result.error;
+    } else {
+      const result = await supabase
+        .from('teacher_settings')
+        .insert([{ user_id: user.id, class_structure: JSON.parse(JSON.stringify(classStructure)) }]);
+      error = result.error;
+    }
+
+    if (error) {
+      console.error('Error saving class structure:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Gagal menyimpan struktur kelas',
+      });
+    } else {
+      toast({
+        title: 'Berjaya',
+        description: 'Struktur kelas berjaya disimpan',
+      });
+    }
+  };
+
+  // Group classes by form level for display
+  const groupedClasses = classStructure.reduce((acc, item) => {
+    if (!acc[item.form_level]) acc[item.form_level] = [];
+    acc[item.form_level].push(item.class_name);
+    return acc;
+  }, {} as Record<number, string[]>);
 
   return (
     <DashboardLayout>
@@ -293,6 +412,122 @@ const Settings = () => {
                 <Button onClick={handleSaveMeetings}>
                   <Save className="w-4 h-4 mr-2" />
                   Simpan Tetapan
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Class Structure Settings - Only for Guru */}
+        {role === 'guru' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-primary" />
+                  Struktur Kelas
+                </CardTitle>
+                <CardDescription>
+                  Tetapkan senarai kelas mengikut tingkatan dan susunan
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Add new class */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Select
+                    value={newClass.form_level}
+                    onValueChange={(val) => setNewClass({ ...newClass, form_level: val })}
+                  >
+                    <SelectTrigger className="w-full sm:w-32">
+                      <SelectValue placeholder="Tingkatan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <SelectItem key={num} value={num.toString()}>
+                          Tingkatan {num}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Nama kelas (cth: Bestari)"
+                    value={newClass.class_name}
+                    onChange={(e) => setNewClass({ ...newClass, class_name: e.target.value })}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleAddClass} size="icon">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Display classes grouped by form level */}
+                {classStructure.length > 0 ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((formLevel) => {
+                      const classesForForm = classStructure
+                        .map((c, idx) => ({ ...c, originalIndex: idx }))
+                        .filter(c => c.form_level === formLevel);
+                      
+                      if (classesForForm.length === 0) return null;
+                      
+                      return (
+                        <div key={formLevel} className="space-y-2">
+                          <Label className="text-sm font-medium">Tingkatan {formLevel}</Label>
+                          <div className="space-y-1">
+                            {classesForForm.map((classItem, idx) => (
+                              <div
+                                key={classItem.originalIndex}
+                                className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg"
+                              >
+                                <GripVertical className="w-4 h-4 text-muted-foreground" />
+                                <span className="flex-1 text-sm">{classItem.class_name}</span>
+                                <span className="text-xs text-muted-foreground">#{idx + 1}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => handleMoveClass(classItem.originalIndex, 'up')}
+                                  disabled={idx === 0}
+                                >
+                                  ↑
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => handleMoveClass(classItem.originalIndex, 'down')}
+                                  disabled={idx === classesForForm.length - 1}
+                                >
+                                  ↓
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => handleRemoveClass(classItem.originalIndex)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Tiada kelas ditambah. Tambah kelas untuk mula.
+                  </p>
+                )}
+
+                <Button onClick={handleSaveClassStructure} disabled={classStructure.length === 0}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Simpan Struktur Kelas
                 </Button>
               </CardContent>
             </Card>
