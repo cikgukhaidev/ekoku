@@ -12,6 +12,7 @@ import Students from "./pages/Students";
 import Meetings from "./pages/Meetings";
 import MeetingDetail from "./pages/MeetingDetail";
 import Reports from "./pages/Reports";
+import AttendanceReport from "./pages/AttendanceReport";
 import Settings from "./pages/Settings";
 import ChangePassword from "./pages/ChangePassword";
 import Schools from "./pages/Schools";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/meetings" element={<Meetings />} />
             <Route path="/meetings/:meetingNumber" element={<MeetingDetail />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/reports/attendance" element={<AttendanceReport />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/schools" element={<Schools />} />
