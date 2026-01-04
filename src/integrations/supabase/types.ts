@@ -356,6 +356,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_school_total_meetings: { Args: never; Returns: number }
       get_user_school_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
