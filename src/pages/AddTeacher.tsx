@@ -17,6 +17,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth';
+import { logActivity } from '@/lib/activityLogger';
 
 const CATEGORIES = [
   { value: 'sukan_permainan', label: 'Sukan Dan Permainan' },
@@ -143,6 +144,13 @@ const AddTeacher = () => {
       if (error) throw error;
 
       if (data.success) {
+        await logActivity({
+          actionType: 'create',
+          entityType: 'user',
+          description: `Menambah guru: ${fullName.trim()} (${email.trim()})`,
+          details: { full_name: fullName.trim(), email: email.trim(), unit_name: unitName.trim(), category, role: 'guru' },
+        });
+
         toast({
           title: 'Berjaya!',
           description: 'Guru berjaya ditambah',
@@ -153,6 +161,14 @@ const AddTeacher = () => {
       }
     } catch (error: any) {
       console.error('Error adding teacher:', error);
+
+      await logActivity({
+        actionType: 'error',
+        entityType: 'user',
+        description: `Gagal menambah guru: ${fullName.trim()} (${email.trim()})`,
+        errorMessage: error.message,
+      });
+
       toast({
         variant: 'destructive',
         title: 'Ralat',

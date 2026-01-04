@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logActivity } from '@/lib/activityLogger';
 
 interface SchoolData {
   id: string;
@@ -152,18 +153,35 @@ const Schools = () => {
   const handleDelete = async () => {
     if (!deleteId) return;
 
+    const schoolToDelete = schools.find(s => s.id === deleteId);
+
     const { error } = await supabase
       .from('schools')
       .delete()
       .eq('id', deleteId);
 
     if (error) {
+      await logActivity({
+        actionType: 'error',
+        entityType: 'school',
+        entityId: deleteId,
+        description: `Gagal memadam sekolah: ${schoolToDelete?.name || deleteId}`,
+        errorMessage: error.message,
+      });
+
       toast({
         variant: 'destructive',
         title: 'Ralat',
         description: 'Gagal memadam sekolah',
       });
     } else {
+      await logActivity({
+        actionType: 'delete',
+        entityType: 'school',
+        entityId: deleteId,
+        description: `Memadam sekolah: ${schoolToDelete?.name || deleteId}`,
+      });
+
       toast({
         title: 'Berjaya',
         description: 'Sekolah berjaya dipadam',

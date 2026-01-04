@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { resizeImage, formatFileSize } from '@/lib/imageUtils';
+import { logActivity } from '@/lib/activityLogger';
 
 const EditSchool = () => {
   const navigate = useNavigate();
@@ -147,6 +148,14 @@ const EditSchool = () => {
 
       if (error) throw error;
 
+      await logActivity({
+        actionType: 'update',
+        entityType: 'school',
+        entityId: schoolId,
+        description: `Mengemaskini sekolah: ${schoolName.trim().toUpperCase()}`,
+        details: { school_name: schoolName.trim().toUpperCase(), has_logo: !!logoUrl },
+      });
+
       toast({
         title: 'Berjaya',
         description: 'Maklumat sekolah berjaya dikemaskini',
@@ -154,6 +163,14 @@ const EditSchool = () => {
 
       navigate('/schools');
     } catch (error: any) {
+      await logActivity({
+        actionType: 'error',
+        entityType: 'school',
+        entityId: schoolId,
+        description: `Gagal mengemaskini sekolah: ${schoolName.trim()}`,
+        errorMessage: error.message,
+      });
+
       toast({
         variant: 'destructive',
         title: 'Ralat',
