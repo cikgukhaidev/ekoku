@@ -214,14 +214,14 @@ const AttendanceReport = () => {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="text-xs">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12 text-center sticky left-0 bg-background z-10">Bil</TableHead>
-                    <TableHead className="min-w-[180px] sticky left-12 bg-background z-10">Nama</TableHead>
-                    <TableHead className="w-20 text-center">Kelas</TableHead>
+                    <TableHead className="w-8 text-center sticky left-0 bg-background z-10 px-1 py-2">Bil</TableHead>
+                    <TableHead className="min-w-[120px] max-w-[150px] sticky left-8 bg-background z-10 px-2 py-2">Nama</TableHead>
+                    <TableHead className="w-12 text-center px-1 py-2">Kelas</TableHead>
                     {Array.from({ length: totalMeetings }, (_, i) => (
-                      <TableHead key={i + 1} className="w-10 text-center px-1">
+                      <TableHead key={i + 1} className="w-6 text-center px-0.5 py-2 text-[10px]">
                         {i + 1}
                       </TableHead>
                     ))}
@@ -233,14 +233,14 @@ const AttendanceReport = () => {
                       const rowNumber = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
                       
                       return (
-                        <TableRow key={student.id}>
-                          <TableCell className="text-center font-medium sticky left-0 bg-background">
+                        <TableRow key={student.id} className="h-7">
+                          <TableCell className="text-center font-medium sticky left-0 bg-background px-1 py-1 text-[10px]">
                             {rowNumber}
                           </TableCell>
-                          <TableCell className="font-medium sticky left-12 bg-background">
+                          <TableCell className="font-medium sticky left-8 bg-background px-2 py-1 text-[10px] truncate max-w-[150px]">
                             {toTitleCase(student.full_name)}
                           </TableCell>
-                          <TableCell className="text-center text-sm">
+                          <TableCell className="text-center px-1 py-1 text-[10px]">
                             {student.form_level}{student.class_name.toUpperCase()}
                           </TableCell>
                           {Array.from({ length: totalMeetings }, (_, i) => {
@@ -251,13 +251,13 @@ const AttendanceReport = () => {
                               : null;
 
                             return (
-                              <TableCell key={meetingNum} className="text-center px-1">
+                              <TableCell key={meetingNum} className="text-center px-0.5 py-1">
                                 {status === 'hadir' || status === 'lewat' ? (
-                                  <Check className="w-4 h-4 mx-auto text-green-600" />
+                                  <Check className="w-3 h-3 mx-auto text-green-600" />
                                 ) : status === 'tidak_hadir' ? (
-                                  <X className="w-4 h-4 mx-auto text-red-600" />
+                                  <X className="w-3 h-3 mx-auto text-red-600" />
                                 ) : (
-                                  <span className="text-muted-foreground">-</span>
+                                  <span className="text-muted-foreground text-[10px]">-</span>
                                 )}
                               </TableCell>
                             );
