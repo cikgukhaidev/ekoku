@@ -307,8 +307,9 @@ const Auth = () => {
       </main>
 
       {/* Footer */}
-      <footer className="p-6 text-center">
-        <p className="text-xs text-muted-foreground">
+      <footer className="p-6 text-center border-t border-border">
+        <p className="text-sm text-foreground font-medium mb-1">Made by MKH</p>
+        <p className="text-sm text-muted-foreground">
           © 2026 e-Kokurikulum. Sistem Pengurusan Kokurikulum Sekolah.
         </p>
       </footer>
