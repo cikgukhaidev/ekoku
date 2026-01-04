@@ -28,7 +28,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     
     // Parse request body first
-    const { email, password, fullName, schoolId, role } = await req.json();
+    const { email, password, fullName, schoolId, role, unitName } = await req.json();
 
     // Validate inputs
     if (!email || !password || !fullName || !schoolId || !role) {
@@ -53,16 +53,32 @@ serve(async (req) => {
       const { data: { user: requestingUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
       
       if (!authError && requestingUser) {
-        // Check if requesting user is superadmin
+        // Get requesting user's role
         const { data: roleData } = await supabaseAdmin
           .from("user_roles")
           .select("role")
           .eq("user_id", requestingUser.id)
           .single();
 
-        if (!roleData || roleData.role !== "superadmin") {
+        if (!roleData) {
           return new Response(
-            JSON.stringify({ error: "Only superadmin can create users" }),
+            JSON.stringify({ error: "Unauthorized" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Superadmin can create any role
+        // Ketua penasihat can only create guru
+        if (roleData.role === "ketua_penasihat" && role !== "guru") {
+          return new Response(
+            JSON.stringify({ error: "Ketua penasihat hanya boleh menambah guru" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (roleData.role !== "superadmin" && roleData.role !== "ketua_penasihat") {
+          return new Response(
+            JSON.stringify({ error: "Unauthorized to create users" }),
             { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -88,12 +104,13 @@ serve(async (req) => {
       );
     }
 
-    // Update profile with school_id
+    // Update profile with school_id and unit_name
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .update({
         school_id: schoolId,
         full_name: fullName,
+        unit_name: unitName || null,
         must_change_password: true,
       })
       .eq("user_id", newUser.user.id);

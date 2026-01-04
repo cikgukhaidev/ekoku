@@ -45,51 +45,100 @@ const Schools = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchSchools = async () => {
-    // Fetch schools
-    const { data: schoolsData, error } = await supabase
-      .from('schools')
-      .select('*')
-      .order('name', { ascending: true });
+    try {
+      // Fetch schools
+      const { data: schoolsData, error } = await supabase
+        .from('schools')
+        .select('*')
+        .order('name', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching schools:', error);
+      if (error) {
+        console.error('Error fetching schools:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Ralat',
+          description: 'Gagal memuatkan senarai sekolah',
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!schoolsData || schoolsData.length === 0) {
+        setSchools([]);
+        setFilteredSchools([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch all profiles for these schools
+      const schoolIds = schoolsData.map(s => s.id);
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, school_id')
+        .in('school_id', schoolIds);
+
+      if (!profilesData || profilesData.length === 0) {
+        // No profiles, set all counts to 0
+        const schoolsWithCounts = schoolsData.map(school => ({
+          ...school,
+          head_count: 0,
+          teacher_count: 0,
+        }));
+        setSchools(schoolsWithCounts);
+        setFilteredSchools(schoolsWithCounts);
+        setLoading(false);
+        return;
+      }
+
+      // Get all user_ids from profiles
+      const userIds = profilesData.map(p => p.user_id);
+
+      // Fetch roles for these users
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds);
+
+      // Create a map of user_id to role
+      const userRoleMap = new Map<string, string>();
+      (rolesData || []).forEach(r => {
+        userRoleMap.set(r.user_id, r.role);
+      });
+
+      // Count heads and teachers per school
+      const schoolCounts = new Map<string, { heads: number; teachers: number }>();
+      schoolIds.forEach(id => schoolCounts.set(id, { heads: 0, teachers: 0 }));
+
+      profilesData.forEach(profile => {
+        const role = userRoleMap.get(profile.user_id);
+        const counts = schoolCounts.get(profile.school_id);
+        if (counts) {
+          if (role === 'ketua_penasihat') {
+            counts.heads++;
+          } else if (role === 'guru') {
+            counts.teachers++;
+          }
+        }
+      });
+
+      const schoolsWithCounts = schoolsData.map(school => ({
+        ...school,
+        head_count: schoolCounts.get(school.id)?.heads || 0,
+        teacher_count: schoolCounts.get(school.id)?.teachers || 0,
+      }));
+
+      setSchools(schoolsWithCounts);
+      setFilteredSchools(schoolsWithCounts);
+    } catch (error) {
+      console.error('Error in fetchSchools:', error);
       toast({
         variant: 'destructive',
         title: 'Ralat',
         description: 'Gagal memuatkan senarai sekolah',
       });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // For each school, get counts
-    const schoolsWithCounts = await Promise.all(
-      (schoolsData || []).map(async (school) => {
-        // Count heads (ketua_penasihat) for this school
-        const { count: headCount } = await supabase
-          .from('profiles')
-          .select('*, user_roles!inner(role)', { count: 'exact', head: true })
-          .eq('school_id', school.id)
-          .eq('user_roles.role', 'ketua_penasihat');
-
-        // Count teachers (guru) for this school  
-        const { count: teacherCount } = await supabase
-          .from('profiles')
-          .select('*, user_roles!inner(role)', { count: 'exact', head: true })
-          .eq('school_id', school.id)
-          .eq('user_roles.role', 'guru');
-
-        return {
-          ...school,
-          head_count: headCount || 0,
-          teacher_count: teacherCount || 0,
-        };
-      })
-    );
-
-    setSchools(schoolsWithCounts);
-    setFilteredSchools(schoolsWithCounts);
-    setLoading(false);
   };
 
   useEffect(() => {
