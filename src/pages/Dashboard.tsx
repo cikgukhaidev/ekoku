@@ -225,7 +225,7 @@ const Dashboard = () => {
 
       <div className="mt-6">
         <h3 className="font-display font-semibold text-lg mb-4">Tindakan Pantas</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <QuickActionCard
             icon={<School className="w-6 h-6" />}
             label="Urus Sekolah"
@@ -234,18 +234,11 @@ const Dashboard = () => {
             delay={0.1}
           />
           <QuickActionCard
-            icon={<UserCheck className="w-6 h-6" />}
-            label="Ketua Penasihat"
-            description="Urus ketua"
-            path="/heads"
-            delay={0.15}
-          />
-          <QuickActionCard
             icon={<Megaphone className="w-6 h-6" />}
             label="Pengumuman"
             description="Buat pengumuman"
             path="/announcements"
-            delay={0.2}
+            delay={0.15}
           />
         </div>
       </div>

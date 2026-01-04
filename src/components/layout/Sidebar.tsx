@@ -40,7 +40,6 @@ export const Sidebar = () => {
     if (role === 'superadmin') {
       items.push(
         { path: '/schools', icon: <School className="w-5 h-5" />, label: 'Senarai Sekolah' },
-        { path: '/heads', icon: <Users className="w-5 h-5" />, label: 'Ketua Penasihat' },
         { path: '/announcements', icon: <Megaphone className="w-5 h-5" />, label: 'Pengumuman' }
       );
     }
