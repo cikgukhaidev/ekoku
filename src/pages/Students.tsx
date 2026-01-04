@@ -121,35 +121,23 @@ const Students = () => {
     return classNames;
   };
 
-  // Sort students by class order
-  const sortStudentsByClassOrder = (studentList: Student[]) => {
+  // Sort students alphabetically by name (A-Z)
+  const sortStudentsAlphabetically = (studentList: Student[]) => {
     return [...studentList].sort((a, b) => {
-      // First sort by form level
-      if (a.form_level !== b.form_level) {
-        return a.form_level - b.form_level;
-      }
-      
-      // Then sort by class order from classNames list
-      const aIndex = classNames.findIndex(
-        c => c.toLowerCase() === a.class_name.toLowerCase()
-      );
-      const bIndex = classNames.findIndex(
-        c => c.toLowerCase() === b.class_name.toLowerCase()
-      );
-      
-      // If both found in structure, sort by structure order
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex;
-      }
-      // If only one found, put it first
-      if (aIndex !== -1) return -1;
-      if (bIndex !== -1) return 1;
-      // Otherwise sort alphabetically
-      return a.class_name.localeCompare(b.class_name);
+      return a.full_name.localeCompare(b.full_name, 'ms');
     });
   };
 
-  const filteredStudents = sortStudentsByClassOrder(
+  // Helper to convert name to Title Case
+  const toTitleCase = (str: string) => {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const filteredStudents = sortStudentsAlphabetically(
     students.filter((student) => {
       const matchesSearch = student.full_name
         .toLowerCase()
@@ -568,48 +556,69 @@ const Students = () => {
             </p>
           </motion.div>
         ) : (
-          <div className="space-y-3">
-            {filteredStudents.map((student, index) => (
-              <motion.div
-                key={student.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className="bg-card border border-border rounded-xl p-4 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                    {student.full_name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="font-medium">{student.full_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Tingkatan {student.form_level} • {student.class_name}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEditDialog(student)}
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-12">
+                    Bil
+                  </th>
+                  <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">
+                    Nama
+                  </th>
+                  <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-28">
+                    Kelas
+                  </th>
+                  <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-24">
+                    Tindakan
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredStudents.map((student, index) => (
+                  <motion.tr
+                    key={student.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.02 }}
+                    className="hover:bg-muted/30 transition-colors"
                   >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => {
-                      setSelectedStudent(student);
-                      setIsDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-sm">{toTitleCase(student.full_name)}</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {student.form_level} {student.class_name.toUpperCase()}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openEditDialog(student)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => {
+                            setSelectedStudent(student);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
