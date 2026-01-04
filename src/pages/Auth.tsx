@@ -288,7 +288,7 @@ const Auth = () => {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground text-center mt-4">
-                Password: demo123 | Sekolah: SK DEMO LOVABLE
+                Password: demo123 | Sekolah: SK DEMO MALAYSIA
               </p>
             </DialogContent>
           </Dialog>

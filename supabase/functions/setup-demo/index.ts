@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 // Demo configuration
-const DEMO_SCHOOL_NAME = 'SK DEMO LOVABLE'
+const DEMO_SCHOOL_NAME = 'SK DEMO MALAYSIA'
 const DEMO_PASSWORD = 'demo123'
 
 // Demo users configuration
