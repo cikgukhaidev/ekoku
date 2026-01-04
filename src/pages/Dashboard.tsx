@@ -58,40 +58,14 @@ const Dashboard = () => {
           .from('meetings')
           .select('*', { count: 'exact', head: true });
 
-        // Fetch total meetings target from ketua penasihat of same school
-        let totalMeetingsTarget = 12; // Default
-        if (profile?.school_id) {
-          // Find ketua_penasihat user_id in same school
-          const { data: schoolProfiles } = await supabase
-            .from('profiles')
-            .select('user_id')
-            .eq('school_id', profile.school_id);
+        // Fetch total meetings target configured by ketua penasihat for this school
+        let totalMeetingsTarget = 12;
+        const { data: targetMeetings, error: targetError } = await supabase.rpc(
+          'get_school_total_meetings' as any
+        );
 
-          if (schoolProfiles && schoolProfiles.length > 0) {
-            const userIds = schoolProfiles.map(p => p.user_id);
-            
-            // Find which one is ketua_penasihat
-            const { data: ketuaRoles } = await supabase
-              .from('user_roles')
-              .select('user_id')
-              .in('user_id', userIds)
-              .eq('role', 'ketua_penasihat');
-
-            if (ketuaRoles && ketuaRoles.length > 0) {
-              const ketuaUserId = ketuaRoles[0].user_id;
-              
-              // Get their settings
-              const { data: ketuaSettings } = await supabase
-                .from('teacher_settings')
-                .select('total_meetings')
-                .eq('user_id', ketuaUserId)
-                .maybeSingle();
-
-              if (ketuaSettings?.total_meetings) {
-                totalMeetingsTarget = ketuaSettings.total_meetings;
-              }
-            }
-          }
+        if (!targetError && typeof targetMeetings === 'number') {
+          totalMeetingsTarget = targetMeetings;
         }
 
         setStats(prev => ({
