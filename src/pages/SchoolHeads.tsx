@@ -52,41 +52,81 @@ const SchoolHeads = () => {
   const fetchData = async () => {
     if (!schoolId) return;
 
-    // Fetch school details
-    const { data: schoolData, error: schoolError } = await supabase
-      .from('schools')
-      .select('id, name')
-      .eq('id', schoolId)
-      .single();
+    try {
+      // Fetch school details
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('schools')
+        .select('id, name')
+        .eq('id', schoolId)
+        .maybeSingle();
 
-    if (schoolError) {
-      console.error('Error fetching school:', schoolError);
-      toast({
-        variant: 'destructive',
-        title: 'Ralat',
-        description: 'Sekolah tidak dijumpai',
-      });
-      navigate('/schools');
-      return;
+      if (schoolError) {
+        console.error('Error fetching school:', schoolError);
+        toast({
+          variant: 'destructive',
+          title: 'Ralat',
+          description: 'Sekolah tidak dijumpai',
+        });
+        navigate('/schools');
+        return;
+      }
+
+      if (!schoolData) {
+        toast({
+          variant: 'destructive',
+          title: 'Ralat',
+          description: 'Sekolah tidak dijumpai',
+        });
+        navigate('/schools');
+        return;
+      }
+
+      setSchool(schoolData);
+
+      // Fetch profiles for this school first
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, is_active, created_at, user_id')
+        .eq('school_id', schoolId);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        setLoading(false);
+        return;
+      }
+
+      if (!profilesData || profilesData.length === 0) {
+        setHeads([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get user_ids to fetch their roles
+      const userIds = profilesData.map(p => p.user_id);
+
+      // Fetch roles for these users
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds)
+        .eq('role', 'ketua_penasihat');
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+        setLoading(false);
+        return;
+      }
+
+      // Filter profiles to only include ketua_penasihat
+      const ketuaUserIds = new Set(rolesData?.map(r => r.user_id) || []);
+      const filteredHeads = profilesData.filter(p => ketuaUserIds.has(p.user_id));
+
+      setHeads(filteredHeads);
+    } catch (error) {
+      console.error('Error in fetchData:', error);
+    } finally {
+      setLoading(false);
     }
-
-    setSchool(schoolData);
-
-    // Fetch heads for this school
-    const { data: headsData, error: headsError } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, is_active, created_at, user_id, user_roles!inner(role)')
-      .eq('school_id', schoolId)
-      .eq('user_roles.role', 'ketua_penasihat')
-      .order('full_name', { ascending: true });
-
-    if (headsError) {
-      console.error('Error fetching heads:', headsError);
-    } else {
-      setHeads(headsData || []);
-    }
-
-    setLoading(false);
   };
 
   useEffect(() => {
