@@ -3,9 +3,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Check, AlertCircle, Plus, Pencil, Trash2, Upload, Download, RefreshCw, Activity } from "lucide-react";
+import { Copy, Check, AlertCircle, Plus, Pencil, Trash2, Upload, Download, RefreshCw, Activity, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMalaysianDateTime, formatLogForCopy } from "@/lib/activityLogger";
 import { toast } from "sonner";
@@ -53,7 +52,10 @@ const ENTITY_LABELS: Record<string, string> = {
   attendance: "Kehadiran",
   user: "Pengguna",
   settings: "Tetapan",
+  school: "Sekolah",
 };
+
+const ITEMS_PER_PAGE = 6;
 
 export default function ActivityLogs() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -61,10 +63,16 @@ export default function ActivityLogs() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [filterAction, setFilterAction] = useState<string>("all");
   const [filterEntity, setFilterEntity] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchLogs();
   }, []);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterAction, filterEntity]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -140,10 +148,21 @@ export default function ActivityLogs() {
   };
 
   const filteredLogs = getFilteredLogs();
+  const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
+  const paginatedLogs = filteredLogs.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 md:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Log Aktiviti</h1>
@@ -152,13 +171,13 @@ export default function ActivityLogs() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={fetchLogs}>
+            <Button variant="outline" size="sm" onClick={fetchLogs}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>
-            <Button variant="outline" onClick={handleCopyAll} disabled={filteredLogs.length === 0}>
+            <Button variant="outline" size="sm" onClick={handleCopyAll} disabled={filteredLogs.length === 0}>
               <Copy className="mr-2 h-4 w-4" />
-              Salin Semua ({filteredLogs.length})
+              <span className="hidden sm:inline">Salin Semua</span> ({filteredLogs.length})
             </Button>
           </div>
         </div>
@@ -171,7 +190,7 @@ export default function ActivityLogs() {
           <CardContent>
             <div className="flex flex-wrap gap-4">
               <Select value={filterAction} onValueChange={setFilterAction}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Semua Aksi" />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,7 +206,7 @@ export default function ActivityLogs() {
               </Select>
 
               <Select value={filterEntity} onValueChange={setFilterEntity}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Semua Entiti" />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,6 +218,7 @@ export default function ActivityLogs() {
                   <SelectItem value="attendance">Kehadiran</SelectItem>
                   <SelectItem value="user">Pengguna</SelectItem>
                   <SelectItem value="settings">Tetapan</SelectItem>
+                  <SelectItem value="school">Sekolah</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -211,6 +231,11 @@ export default function ActivityLogs() {
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5" />
               Senarai Log
+              {totalPages > 1 && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  (Halaman {currentPage} / {totalPages})
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -224,9 +249,9 @@ export default function ActivityLogs() {
                 <p>Tiada log aktiviti</p>
               </div>
             ) : (
-              <ScrollArea className="h-[600px]">
+              <>
                 <div className="space-y-3">
-                  {filteredLogs.map((log) => (
+                  {paginatedLogs.map((log) => (
                     <div
                       key={log.id}
                       className={`flex items-start gap-3 rounded-lg border p-4 ${
@@ -274,7 +299,55 @@ export default function ActivityLogs() {
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-6">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => {
+                          // Show first, last, current, and adjacent pages
+                          return page === 1 || 
+                                 page === totalPages || 
+                                 Math.abs(page - currentPage) <= 1;
+                        })
+                        .map((page, index, array) => (
+                          <div key={page} className="flex items-center">
+                            {index > 0 && array[index - 1] !== page - 1 && (
+                              <span className="px-2 text-muted-foreground">...</span>
+                            )}
+                            <Button
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => goToPage(page)}
+                              className="min-w-[36px]"
+                            >
+                              {page}
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
