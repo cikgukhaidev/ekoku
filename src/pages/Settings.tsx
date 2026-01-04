@@ -158,7 +158,7 @@ const Settings = () => {
   };
 
   const handleAddClass = () => {
-    const trimmed = newClassName.trim();
+    const trimmed = newClassName.trim().toUpperCase();
     if (!trimmed) {
       toast({
         variant: 'destructive',
@@ -168,7 +168,7 @@ const Settings = () => {
       return;
     }
 
-    if (classNames.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+    if (classNames.some(c => c === trimmed)) {
       toast({
         variant: 'destructive',
         title: 'Ralat',
