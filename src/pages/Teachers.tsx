@@ -73,6 +73,16 @@ const getCategoryLabel = (value: string | null) => {
   return cat?.label || '-';
 };
 
+// Convert to title case (capitalize first letter of each word)
+const toTitleCase = (str: string | null) => {
+  if (!str) return '-';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 const Teachers = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -403,9 +413,9 @@ const Teachers = () => {
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p className="font-medium">{teacher.full_name}</p>
+                              <p className="font-medium">{toTitleCase(teacher.full_name)}</p>
                               <p className="text-xs text-muted-foreground md:hidden">{teacher.email}</p>
-                              <p className="text-xs text-muted-foreground sm:hidden">{teacher.unit_name || '-'}</p>
+                              <p className="text-xs text-muted-foreground sm:hidden">{toTitleCase(teacher.unit_name)}</p>
                             </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
@@ -420,7 +430,7 @@ const Teachers = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">
-                            {teacher.unit_name || '-'}
+                            {toTitleCase(teacher.unit_name)}
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
                             <Badge variant={teacher.is_active ? 'default' : 'secondary'}>
