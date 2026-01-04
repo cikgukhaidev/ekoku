@@ -68,12 +68,23 @@ const Dashboard = () => {
           totalMeetingsTarget = targetMeetings;
         }
 
+        // Calculate actual attendance rate from data
+        let attendanceRate = 0;
+        const { data: attendanceData } = await supabase
+          .from('attendance')
+          .select('status');
+        
+        if (attendanceData && attendanceData.length > 0) {
+          const hadirCount = attendanceData.filter(a => a.status === 'hadir').length;
+          attendanceRate = Math.round((hadirCount / attendanceData.length) * 100);
+        }
+
         setStats(prev => ({
           ...prev,
           totalStudents: studentCount || 0,
           totalMeetings: meetingCount || 0,
           totalMeetingsTarget,
-          attendanceRate: 85, // Placeholder
+          attendanceRate,
         }));
       }
 
@@ -144,39 +155,28 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="mt-6">
-        <h3 className="font-display font-semibold text-lg mb-4">Tindakan Pantas</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <QuickActionCard
-            icon={<Users className="w-6 h-6" />}
-            label="Senarai Pelajar"
-            description="Urus pelajar"
-            path="/students"
-            delay={0.1}
-          />
-          <QuickActionCard
-            icon={<Calendar className="w-6 h-6" />}
-            label="Kehadiran"
-            description="Ambil kehadiran"
-            path="/meetings"
-            delay={0.15}
-          />
-          <QuickActionCard
-            icon={<TrendingUp className="w-6 h-6" />}
-            label="Laporan"
-            description="Cetak laporan"
-            path="/reports"
-            delay={0.2}
-          />
-          <QuickActionCard
-            icon={<Megaphone className="w-6 h-6" />}
-            label="Pengumuman"
-            description="Lihat semua"
-            path="/announcements"
-            delay={0.25}
-          />
-        </div>
-      </div>
+      {/* Announcements in red box for guru */}
+      {announcements.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mt-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg"
+        >
+          <h4 className="font-semibold text-destructive flex items-center gap-2 mb-3">
+            <Megaphone className="w-5 h-5" />
+            Pengumuman Terkini
+          </h4>
+          <div className="space-y-2">
+            {announcements.map((announcement) => (
+              <div key={announcement.id} className="text-sm">
+                <p className="font-medium">{announcement.title}</p>
+                <p className="text-muted-foreground line-clamp-1">{announcement.content}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </>
   );
 
@@ -307,8 +307,8 @@ const Dashboard = () => {
         {role === 'ketua_penasihat' && renderKetuaDashboard()}
         {role === 'superadmin' && renderSuperadminDashboard()}
 
-        {/* Announcements Section */}
-        {announcements.length > 0 && (
+        {/* Announcements Section - Only for non-guru roles */}
+        {role !== 'guru' && announcements.length > 0 && (
           <div className="mt-6">
             <h3 className="font-display font-semibold text-lg mb-4">Pengumuman Terkini</h3>
             <div className="space-y-3">
