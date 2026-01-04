@@ -106,14 +106,31 @@ const Settings = () => {
   const handleSaveMeetings = async () => {
     if (!user?.id) return;
 
-    const { error } = await supabase
+    // Check if record already exists
+    const { data: existing } = await supabase
       .from('teacher_settings')
-      .upsert({
-        user_id: user.id,
-        total_meetings: totalMeetings,
-      });
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    let error;
+    if (existing) {
+      // Update existing record
+      const result = await supabase
+        .from('teacher_settings')
+        .update({ total_meetings: totalMeetings })
+        .eq('user_id', user.id);
+      error = result.error;
+    } else {
+      // Insert new record
+      const result = await supabase
+        .from('teacher_settings')
+        .insert({ user_id: user.id, total_meetings: totalMeetings });
+      error = result.error;
+    }
 
     if (error) {
+      console.error('Error saving meetings:', error);
       toast({
         variant: 'destructive',
         title: 'Ralat',
