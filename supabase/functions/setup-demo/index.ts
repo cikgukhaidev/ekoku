@@ -51,48 +51,61 @@ Deno.serve(async (req) => {
 
     // Step 1: Delete existing demo data
     console.log('Cleaning up existing demo data...')
-    
-    // Get demo school ID first
-    const { data: existingSchool } = await supabaseAdmin
-      .from('schools')
-      .select('id')
-      .eq('is_demo', true)
-      .single()
 
-    if (existingSchool) {
-      // Delete in correct order due to foreign keys
-      await supabaseAdmin.from('attendance').delete().eq('is_demo', true)
-      await supabaseAdmin.from('meetings').delete().eq('is_demo', true)
-      await supabaseAdmin.from('students').delete().eq('is_demo', true)
-      await supabaseAdmin.from('academic_sessions').delete().eq('is_demo', true)
-      
-      // Get demo user IDs
-      const { data: demoProfiles } = await supabaseAdmin
-        .from('profiles')
-        .select('user_id')
-        .eq('is_demo', true)
-      
-      if (demoProfiles && demoProfiles.length > 0) {
-        const userIds = demoProfiles.map(p => p.user_id)
-        
-        // Delete user roles
-        await supabaseAdmin.from('user_roles').delete().in('user_id', userIds)
-        
-        // Delete teacher settings
-        await supabaseAdmin.from('teacher_settings').delete().in('user_id', userIds)
-        
-        // Delete profiles
-        await supabaseAdmin.from('profiles').delete().eq('is_demo', true)
-        
-        // Delete auth users
-        for (const userId of userIds) {
-          await supabaseAdmin.auth.admin.deleteUser(userId)
-        }
-      }
-      
-      // Delete school
-      await supabaseAdmin.from('schools').delete().eq('is_demo', true)
+    const demoEmails = demoUsers.map((u) => u.email)
+
+    // Delete demo rows (safe even if none exist)
+    await supabaseAdmin.from('attendance').delete().eq('is_demo', true)
+    await supabaseAdmin.from('meetings').delete().eq('is_demo', true)
+    await supabaseAdmin.from('students').delete().eq('is_demo', true)
+    await supabaseAdmin.from('academic_sessions').delete().eq('is_demo', true)
+
+    // Find existing demo profiles by email (even if is_demo was not set)
+    const { data: existingProfiles, error: existingProfilesError } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id,email')
+      .in('email', demoEmails)
+
+    if (existingProfilesError) {
+      console.error('Error fetching existing demo profiles:', existingProfilesError)
     }
+
+    const userIdsFromProfiles = (existingProfiles ?? [])
+      .map((p) => p.user_id)
+      .filter(Boolean) as string[]
+
+    // Also attempt to find auth users by email (in case profile is missing)
+    const { data: authUsersPage, error: listUsersError } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    })
+
+    if (listUsersError) {
+      console.error('Error listing users:', listUsersError)
+    }
+
+    const userIdsFromAuth = (authUsersPage?.users ?? [])
+      .filter((u) => (u.email ? demoEmails.includes(u.email) : false))
+      .map((u) => u.id)
+
+    const demoUserIds = Array.from(new Set([...userIdsFromProfiles, ...userIdsFromAuth]))
+
+    if (demoUserIds.length > 0) {
+      await supabaseAdmin.from('user_roles').delete().in('user_id', demoUserIds)
+      await supabaseAdmin.from('teacher_settings').delete().in('user_id', demoUserIds)
+      await supabaseAdmin.from('profiles').delete().in('email', demoEmails)
+
+      for (const userId of demoUserIds) {
+        await supabaseAdmin.auth.admin.deleteUser(userId)
+      }
+    } else {
+      // Still ensure no stale demo profiles remain
+      await supabaseAdmin.from('profiles').delete().in('email', demoEmails)
+    }
+
+    // Delete demo school(s) last to satisfy FKs
+    await supabaseAdmin.from('schools').delete().eq('is_demo', true)
+    await supabaseAdmin.from('schools').delete().eq('name', DEMO_SCHOOL_NAME)
 
     console.log('Cleanup complete. Creating fresh demo data...')
 
@@ -125,19 +138,23 @@ Deno.serve(async (req) => {
 
       console.log('Created auth user:', user.email)
 
-      // Create profile
+      // Upsert profile (a DB trigger may already create one on user creation)
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .insert({
-          user_id: authUser.user.id,
-          email: user.email,
-          full_name: user.fullName,
-          school_id: school.id,
-          is_demo: true,
-          must_change_password: false,
-          kokurikulum_category: user.category,
-          unit_name: user.unitName
-        })
+        .upsert(
+          {
+            user_id: authUser.user.id,
+            email: user.email,
+            full_name: user.fullName,
+            school_id: school.id,
+            is_demo: true,
+            must_change_password: false,
+            kokurikulum_category: user.category,
+            unit_name: user.unitName,
+            is_active: true,
+          },
+          { onConflict: 'user_id' }
+        )
 
       if (profileError) {
         console.error('Error creating profile:', profileError)

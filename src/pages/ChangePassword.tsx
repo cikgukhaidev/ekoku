@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, Key, Shield } from 'lucide-react';
@@ -15,9 +15,17 @@ const ChangePassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { user, signOut, markPasswordChanged } = useAuth();
+  const { user, profile, signOut, markPasswordChanged } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const isDemoAccount = !!profile?.is_demo || !!user?.email?.endsWith('@demo.com');
+
+  useEffect(() => {
+    if (isDemoAccount) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isDemoAccount, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
