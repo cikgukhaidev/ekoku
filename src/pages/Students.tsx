@@ -121,9 +121,27 @@ const Students = () => {
     return classNames;
   };
 
-  // Sort students alphabetically by name (A-Z)
-  const sortStudentsAlphabetically = (studentList: Student[]) => {
+  // Sort students by Form Level > Class Order (from settings) > Name (A-Z)
+  const sortStudentsByClassOrder = (studentList: Student[]) => {
     return [...studentList].sort((a, b) => {
+      // First sort by form level
+      if (a.form_level !== b.form_level) {
+        return a.form_level - b.form_level;
+      }
+      
+      // Then sort by class order (based on classNames order from settings)
+      const classIndexA = classNames.findIndex(c => c.toUpperCase() === a.class_name.toUpperCase());
+      const classIndexB = classNames.findIndex(c => c.toUpperCase() === b.class_name.toUpperCase());
+      
+      // If class not found in settings, put at end
+      const orderA = classIndexA === -1 ? 999 : classIndexA;
+      const orderB = classIndexB === -1 ? 999 : classIndexB;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // Finally sort by name (A-Z)
       return a.full_name.localeCompare(b.full_name, 'ms');
     });
   };
@@ -133,7 +151,7 @@ const Students = () => {
     return str.toUpperCase();
   };
 
-  const filteredStudents = sortStudentsAlphabetically(
+  const filteredStudents = sortStudentsByClassOrder(
     students.filter((student) => {
       const matchesSearch = student.full_name
         .toLowerCase()
