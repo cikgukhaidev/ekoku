@@ -1,96 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* e-Kokurikulum Design System
+   Soft & Calm Color Palette with Teal Primary
+   Mobile-First Approach
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Background Colors */
+    --background: 40 33% 98%;
+    --foreground: 200 25% 15%;
 
+    /* Card & Surface */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 200 25% 15%;
 
+    /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 200 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Soft Teal */
+    --primary: 168 76% 36%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Warm Gray */
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 200 25% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted - Soft Gray */
+    --muted: 40 15% 92%;
+    --muted-foreground: 200 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Light Teal */
+    --accent: 168 50% 95%;
+    --accent-foreground: 168 76% 30%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive - Soft Red */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Success - Emerald */
+    --success: 152 69% 40%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    /* Warning - Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
 
-    --sidebar-background: 0 0% 98%;
+    /* Info - Sky Blue */
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Borders & Input */
+    --border: 40 20% 88%;
+    --input: 40 20% 88%;
+    --ring: 168 76% 36%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --radius: 0.75rem;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Sidebar */
+    --sidebar-background: 168 30% 97%;
+    --sidebar-foreground: 200 25% 25%;
+    --sidebar-primary: 168 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 168 50% 95%;
+    --sidebar-accent-foreground: 168 76% 30%;
+    --sidebar-border: 168 20% 90%;
+    --sidebar-ring: 168 76% 36%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    /* Custom Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(168 76% 36%), hsl(152 69% 40%));
+    --gradient-hero: linear-gradient(135deg, hsl(168 30% 97%), hsl(40 33% 98%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(40 20% 99%));
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(200 25% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(200 25% 15% / 0.08), 0 2px 4px -2px hsl(200 25% 15% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(200 25% 15% / 0.08), 0 4px 6px -4px hsl(200 25% 15% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(200 25% 15% / 0.1), 0 8px 10px -6px hsl(200 25% 15% / 0.05);
+    --shadow-primary: 0 4px 14px 0 hsl(168 76% 36% / 0.25);
+    --shadow-card: 0 2px 8px 0 hsl(200 25% 15% / 0.06);
 
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* FAB Shadow */
+    --shadow-fab: 0 6px 20px 0 hsl(168 76% 36% / 0.35);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 200 25% 8%;
+    --foreground: 40 20% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 200 20% 12%;
+    --card-foreground: 40 20% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 200 20% 12%;
+    --popover-foreground: 40 20% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 168 65% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 200 15% 18%;
+    --secondary-foreground: 40 20% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 200 15% 20%;
+    --muted-foreground: 200 10% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 168 30% 18%;
+    --accent-foreground: 168 65% 65%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --success: 152 55% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 80% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 199 70% 50%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 200 15% 22%;
+    --input: 200 15% 22%;
+    --ring: 168 65% 45%;
+
+    --sidebar-background: 200 20% 10%;
+    --sidebar-foreground: 40 20% 90%;
+    --sidebar-primary: 168 65% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 168 30% 18%;
+    --sidebar-accent-foreground: 168 65% 65%;
+    --sidebar-border: 200 15% 22%;
+    --sidebar-ring: 168 65% 45%;
   }
 }
 
@@ -99,7 +143,127 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    @apply scroll-smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Stat Card */
+  .stat-card {
+    @apply bg-card rounded-xl p-5 shadow-card border border-border/50 transition-all duration-200;
+  }
+
+  .stat-card:hover {
+    @apply shadow-md -translate-y-0.5;
+  }
+
+  /* FAB Container */
+  .fab-container {
+    @apply fixed bottom-6 right-6 z-50;
+  }
+
+  /* FAB Button */
+  .fab-button {
+    @apply w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-fab transition-all duration-200;
+  }
+
+  .fab-button:hover {
+    @apply scale-105;
+  }
+
+  .fab-button:active {
+    @apply scale-95;
+  }
+
+  /* Mobile Nav */
+  .mobile-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-2 z-40 md:hidden;
+  }
+
+  /* Dashboard Header */
+  .dashboard-header {
+    @apply bg-gradient-to-r from-primary to-success px-4 py-6 rounded-b-3xl text-primary-foreground;
+  }
+
+  /* Announcement Card */
+  .announcement-card {
+    @apply bg-accent/50 border border-accent rounded-xl p-4;
+  }
+
+  /* Quick Action Button */
+  .quick-action {
+    @apply flex flex-col items-center gap-2 p-4 rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-200;
+  }
+
+  .quick-action:hover {
+    @apply shadow-md border-primary/20 bg-accent/30;
+  }
+
+  /* Form input focus */
+  .input-focus {
+    @apply focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200;
+  }
+
+  /* Status badges */
+  .badge-hadir {
+    @apply bg-success/10 text-success border border-success/20;
+  }
+
+  .badge-tidak-hadir {
+    @apply bg-destructive/10 text-destructive border border-destructive/20;
+  }
+
+  .badge-lewat {
+    @apply bg-warning/10 text-warning border border-warning/20;
+  }
+
+  /* Role badges */
+  .badge-superadmin {
+    @apply bg-primary/10 text-primary border border-primary/20;
+  }
+
+  .badge-ketua {
+    @apply bg-info/10 text-info border border-info/20;
+  }
+
+  .badge-guru {
+    @apply bg-success/10 text-success border border-success/20;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area for mobile */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-card/80 backdrop-blur-lg;
   }
 }
