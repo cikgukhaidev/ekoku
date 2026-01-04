@@ -15,7 +15,7 @@ const ChangePassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { user, signOut } = useAuth();
+  const { user, signOut, markPasswordChanged } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -54,16 +54,29 @@ const ChangePassword = () => {
       });
     } else {
       // Update must_change_password flag
-      await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ must_change_password: false })
         .eq('user_id', user?.id);
+
+      if (profileError) {
+        toast({
+          variant: 'destructive',
+          title: 'Ralat',
+          description: 'Kata laluan berjaya ditukar tetapi gagal kemaskini status. Sila cuba lagi.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Prevent DashboardLayout from redirecting back to /change-password
+      markPasswordChanged();
 
       toast({
         title: 'Berjaya!',
         description: 'Kata laluan berjaya ditukar',
       });
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     }
 
     setIsLoading(false);

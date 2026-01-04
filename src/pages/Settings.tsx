@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 
 const Settings = () => {
-  const { user, profile, role } = useAuth();
+  const { user, profile, role, markPasswordChanged } = useAuth();
   const { toast } = useToast();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -80,10 +80,14 @@ const Settings = () => {
       });
     } else {
       // Update must_change_password flag
-      await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ must_change_password: false })
         .eq('user_id', user?.id);
+
+      if (!profileError) {
+        markPasswordChanged();
+      }
 
       toast({
         title: 'Berjaya',
