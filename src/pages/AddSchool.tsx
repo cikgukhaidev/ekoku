@@ -17,6 +17,19 @@ const AddSchool = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [schoolName, setSchoolName] = useState('');
+
+  const capitalizeWords = (text: string) => {
+    return text
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const capitalized = capitalizeWords(e.target.value);
+    setSchoolName(capitalized);
+  };
   const [logoFile, setLogoFile] = useState<Blob | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [originalSize, setOriginalSize] = useState<number>(0);
@@ -174,7 +187,7 @@ const AddSchool = () => {
                     id="school-name"
                     placeholder="cth: SMK Dato' Onn"
                     value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
+                    onChange={handleNameChange}
                   />
                 </div>
 
