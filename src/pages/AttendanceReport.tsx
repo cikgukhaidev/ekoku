@@ -263,8 +263,8 @@ const AttendanceReport = () => {
         <thead>
           <tr>
             <th className="border border-black px-1 py-0.5 text-center" style={{ width: '20px' }}>Bil</th>
-            <th className="border border-black px-1 py-0.5 text-left" style={{ minWidth: '140px', maxWidth: '180px' }}>Nama Pelajar</th>
-            <th className="border border-black px-1 py-0.5 text-center whitespace-nowrap" style={{ width: '50px' }}>Kelas</th>
+            <th className="border border-black px-1 py-0.5 text-center">Nama Pelajar</th>
+            <th className="border border-black px-0.5 py-0.5 text-center whitespace-nowrap" style={{ width: '45px' }}>Kelas</th>
             {Array.from({ length: totalMeetings }, (_, i) => (
               <th key={i + 1} className="border border-black px-0.5 py-0.5 text-center" style={{ width: '18px' }}>
                 {i + 1}
