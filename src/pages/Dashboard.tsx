@@ -130,54 +130,29 @@ const Dashboard = () => {
   }, [role, profile]);
 
   const renderGuruDashboard = () => (
-    <>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <StatCard
-          title="Jumlah Pelajar"
-          value={stats.totalStudents}
-          icon={<Users className="w-6 h-6" />}
-          variant="primary"
-          delay={0.1}
-        />
-        <StatCard
-          title="Perjumpaan"
-          value={`${stats.totalMeetings}/${stats.totalMeetingsTarget}`}
-          icon={<Calendar className="w-6 h-6" />}
-          variant="info"
-          delay={0.15}
-        />
-        <StatCard
-          title="Kehadiran"
-          value={`${stats.attendanceRate}%`}
-          icon={<TrendingUp className="w-6 h-6" />}
-          variant="success"
-          delay={0.2}
-        />
-      </div>
-
-      {/* Announcements in red box for guru */}
-      {announcements.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="mt-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg"
-        >
-          <h4 className="font-semibold text-destructive flex items-center gap-2 mb-3">
-            <Megaphone className="w-5 h-5" />
-            Pengumuman Terkini
-          </h4>
-          <div className="space-y-2">
-            {announcements.map((announcement) => (
-              <div key={announcement.id} className="text-sm">
-                <p className="font-medium">{announcement.title}</p>
-                <p className="text-muted-foreground line-clamp-1">{announcement.content}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-    </>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <StatCard
+        title="Jumlah Pelajar"
+        value={stats.totalStudents}
+        icon={<Users className="w-6 h-6" />}
+        variant="primary"
+        delay={0.1}
+      />
+      <StatCard
+        title="Perjumpaan"
+        value={`${stats.totalMeetings}/${stats.totalMeetingsTarget}`}
+        icon={<Calendar className="w-6 h-6" />}
+        variant="info"
+        delay={0.15}
+      />
+      <StatCard
+        title="Kehadiran"
+        value={`${stats.attendanceRate}%`}
+        icon={<TrendingUp className="w-6 h-6" />}
+        variant="success"
+        delay={0.2}
+      />
+    </div>
   );
 
   const renderKetuaDashboard = () => (
@@ -307,10 +282,18 @@ const Dashboard = () => {
         {role === 'ketua_penasihat' && renderKetuaDashboard()}
         {role === 'superadmin' && renderSuperadminDashboard()}
 
-        {/* Announcements Section - Only for non-guru roles */}
-        {role !== 'guru' && announcements.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-display font-semibold text-lg mb-4">Pengumuman Terkini</h3>
+        {/* Announcements Section - For all roles including guru */}
+        {announcements.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg"
+          >
+            <h4 className="font-semibold text-destructive flex items-center gap-2 mb-3">
+              <Megaphone className="w-5 h-5" />
+              Pengumuman Terkini
+            </h4>
             <div className="space-y-3">
               {announcements.map((announcement, index) => (
                 <AnnouncementCard
@@ -323,7 +306,7 @@ const Dashboard = () => {
                 />
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
     </DashboardLayout>
