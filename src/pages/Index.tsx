@@ -122,45 +122,12 @@ const Index = () => {
             ))}
           </motion.div>
 
-          {/* Mobile Showcase */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="mt-20 text-center"
-          >
-            <span className="text-sm text-muted-foreground">
-              ✨ Dioptimumkan untuk peranti mudah alih
-            </span>
-            <div className="mt-8 flex justify-center">
-              <div className="relative w-64 h-[500px] bg-card border-4 border-foreground/10 rounded-[40px] shadow-xl overflow-hidden">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-foreground/10 rounded-b-xl" />
-                <div className="p-4 pt-10 h-full bg-gradient-to-b from-primary/5 to-transparent">
-                  <div className="bg-primary/10 rounded-2xl p-4 mb-4">
-                    <div className="w-12 h-12 bg-primary/20 rounded-full mb-2" />
-                    <div className="h-3 bg-primary/20 rounded w-3/4 mb-1" />
-                    <div className="h-2 bg-primary/10 rounded w-1/2" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="bg-card border border-border rounded-xl p-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-lg mb-2" />
-                        <div className="h-2 bg-muted rounded w-3/4" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </main>
 
       {/* Footer */}
       <footer className="p-6 text-center border-t border-border mt-12">
-        <p className="text-sm text-muted-foreground">
-          © 2026 e-Kokurikulum. Sistem Pengurusan Kokurikulum Sekolah.
-        </p>
+        <p className="text-sm text-foreground font-medium">Made by MKH</p>
       </footer>
     </div>
   );
