@@ -1,1 +1,7 @@
 project_id = "wumicfakfvhkktscdxzt"
+
+[functions.create-user]
+verify_jwt = false
+
+[functions.setup-superadmin]
+verify_jwt = false
