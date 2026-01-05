@@ -158,9 +158,16 @@ const Auth = () => {
             <p className="text-muted-foreground mt-2">
               Log masuk untuk mengurus aktiviti kokurikulum anda
             </p>
-            <p className="text-sm mt-3">
-              Ingin mencuba sistem ini? Hubungi{' '}
-              <span className="text-red-500 font-semibold">@khairanhadafi (Telegram)</span>
+            <p className="text-sm mt-3 text-muted-foreground">
+              Berminat untuk mencuba? Hubungi kami di{' '}
+              <a 
+                href="https://t.me/khairanhadafi" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-red-500 font-semibold hover:text-red-600 hover:underline transition-colors"
+              >
+                @khairanhadafi (Telegram)
+              </a>
             </p>
           </div>
 
