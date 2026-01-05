@@ -576,16 +576,16 @@ const Students = () => {
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-12">
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-16">
                       Bil
                     </th>
                     <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">
                       Nama
                     </th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-28">
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-36">
                       Kelas
                     </th>
-                    <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-24">
+                    <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-28">
                       Tindakan
                     </th>
                   </tr>
@@ -606,7 +606,7 @@ const Students = () => {
                         <span className="font-medium text-sm">{toUpperCase(student.full_name)}</span>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        {student.form_level} {student.class_name.toUpperCase()}
+                        {student.class_name.toUpperCase()}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -653,7 +653,7 @@ const Students = () => {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm leading-tight">{toUpperCase(student.full_name)}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {student.form_level} {student.class_name.toUpperCase()}
+                      {student.class_name.toUpperCase()}
                     </p>
                   </div>
                   <div className="flex items-center shrink-0">
