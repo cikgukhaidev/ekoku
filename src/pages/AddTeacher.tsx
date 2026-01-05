@@ -98,11 +98,13 @@ const AddTeacher = () => {
       return;
     }
 
-    if (!password || password.length < 6) {
+    // Password validation: min 8 chars, must have uppercase, lowercase, number
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!password || !passwordRegex.test(password)) {
       toast({
         variant: 'destructive',
         title: 'Ralat',
-        description: 'Password mestilah sekurang-kurangnya 6 aksara',
+        description: 'Password mestilah sekurang-kurangnya 8 aksara dengan huruf besar, huruf kecil, dan nombor',
       });
       return;
     }
@@ -296,7 +298,7 @@ const AddTeacher = () => {
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Minimum 6 aksara
+                    Minimum 8 aksara dengan huruf besar, huruf kecil, dan nombor
                   </p>
                 </div>
 

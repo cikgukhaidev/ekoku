@@ -1,13 +1,13 @@
 project_id = "wumicfakfvhkktscdxzt"
 
 [functions.create-user]
-verify_jwt = false
+verify_jwt = true
 
 [functions.setup-superadmin]
-verify_jwt = false
+verify_jwt = false  # Must remain false for initial setup (protected by DB-level check)
 
 [functions.reset-password]
-verify_jwt = false
+verify_jwt = true
 
 [functions.setup-demo]
-verify_jwt = false
+verify_jwt = true
