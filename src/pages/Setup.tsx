@@ -8,10 +8,14 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+// Setup key for additional security (optional - only required if configured in Supabase)
+const SETUP_KEY = import.meta.env.VITE_SETUP_SECRET_KEY || '';
+
 const Setup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [setupKey, setSetupKey] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -31,11 +35,29 @@ const Setup = () => {
       return;
     }
 
+    // Validate strong password (8+ chars, uppercase, lowercase, number)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat',
+        description: 'Password mestilah sekurang-kurangnya 8 aksara dengan huruf besar, huruf kecil, dan nombor',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      // Build headers with setup key if provided
+      const headers: Record<string, string> = {};
+      if (setupKey || SETUP_KEY) {
+        headers['x-setup-key'] = setupKey || SETUP_KEY;
+      }
+
       const { data, error } = await supabase.functions.invoke('setup-superadmin', {
         body: { email, password, fullName },
+        headers,
       });
 
       if (error) throw error;
@@ -152,13 +174,13 @@ const Setup = () => {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Minimum 6 aksara"
+                    placeholder="Min 8 aksara (Aa1...)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
                     disabled={isLoading}
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                   <button
                     type="button"
@@ -168,6 +190,24 @@ const Setup = () => {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Huruf besar, huruf kecil, dan nombor diperlukan
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="setupKey">Kunci Setup (Pilihan)</Label>
+                <Input
+                  id="setupKey"
+                  type="password"
+                  placeholder="Masukkan kunci jika diperlukan"
+                  value={setupKey}
+                  onChange={(e) => setSetupKey(e.target.value)}
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Hanya diperlukan jika SETUP_SECRET_KEY dikonfigurasi
+                </p>
               </div>
 
               <div className="bg-accent/50 rounded-lg p-4 text-sm">

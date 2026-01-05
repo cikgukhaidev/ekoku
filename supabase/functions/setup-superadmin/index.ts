@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// SECURITY: Restrict CORS to production domain
+const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "https://happy-island-07eec2c1e.6.azurestaticapps.net";
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-setup-key',
 };
 
 serve(async (req) => {
@@ -13,9 +16,20 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: Require setup key for additional protection
+    const setupKey = Deno.env.get('SETUP_SECRET_KEY');
+    const providedKey = req.headers.get('x-setup-key');
+
+    if (setupKey && providedKey !== setupKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid setup key' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
     // Use service role to bypass RLS
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -54,9 +68,11 @@ serve(async (req) => {
       );
     }
 
-    if (password.length < 6) {
+    // SECURITY: Strong password requirement (8+ chars, uppercase, lowercase, number)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(password)) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Password mestilah sekurang-kurangnya 6 aksara' }),
+        JSON.stringify({ success: false, error: 'Password mestilah sekurang-kurangnya 8 aksara dengan huruf besar, huruf kecil, dan nombor' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
