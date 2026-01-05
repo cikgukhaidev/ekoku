@@ -1,6 +1,14 @@
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth';
 
+const toTitleCase = (str: string) => {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 interface DashboardHeaderProps {
   schoolLogo?: string;
   schoolName?: string;
@@ -47,7 +55,7 @@ export const DashboardHeader = ({ schoolLogo, schoolName }: DashboardHeaderProps
           <div>
             <p className="text-primary-foreground/80 text-sm">{getGreeting()},</p>
             <h1 className="text-xl font-display font-bold">
-              {profile?.full_name || 'Pengguna'}
+              {profile?.full_name ? toTitleCase(profile.full_name) : 'Pengguna'}
             </h1>
             <p className="text-primary-foreground/70 text-sm mt-0.5">
               {getRoleTitle()} {profile?.unit_name && `• ${profile.unit_name}`}
