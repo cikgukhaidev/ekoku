@@ -25,6 +25,14 @@ const CATEGORIES = [
   { value: 'persatuan_kelab', label: 'Persatuan Dan Kelab' },
 ] as const;
 
+// Auto capitalize first letter of each word
+const capitalizeWords = (str: string) => {
+  return str
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const AddTeacher = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -221,7 +229,7 @@ const AddTeacher = () => {
                     id="fullName"
                     placeholder="Masukkan nama penuh"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e) => setFullName(capitalizeWords(e.target.value))}
                     disabled={loading}
                   />
                 </div>
@@ -260,7 +268,7 @@ const AddTeacher = () => {
                     id="unitName"
                     placeholder="Contoh: Pengakap, Bola Sepak, Kelab Komputer"
                     value={unitName}
-                    onChange={(e) => setUnitName(e.target.value)}
+                    onChange={(e) => setUnitName(capitalizeWords(e.target.value))}
                     disabled={loading}
                   />
                   <p className="text-xs text-muted-foreground">
