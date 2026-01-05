@@ -68,16 +68,21 @@ const Settings = () => {
         if (data) {
           setTotalMeetings(data.total_meetings ?? 12);
           if (data.class_structure && Array.isArray(data.class_structure)) {
-            // Handle both old format (with form_level) and new format (just strings)
             const classes = data.class_structure as any[];
             if (classes.length > 0 && typeof classes[0] === 'string') {
               setClassNames(classes as string[]);
             } else if (classes.length > 0 && typeof classes[0] === 'object') {
-              // Convert old format to new - extract unique class names in order
               const uniqueNames: string[] = [];
-              classes.forEach((c: any) => {
-                if (c.class_name && !uniqueNames.includes(c.class_name)) {
-                  uniqueNames.push(c.class_name);
+              classes.forEach((formData: any) => {
+                if (formData.classes && Array.isArray(formData.classes)) {
+                  formData.classes.forEach((className: string) => {
+                    const baseName = className.replace(/^\d+\s+/, '');
+                    if (!uniqueNames.includes(baseName)) {
+                      uniqueNames.push(baseName);
+                    }
+                  });
+                } else if (formData.class_name && !uniqueNames.includes(formData.class_name)) {
+                  uniqueNames.push(formData.class_name);
                 }
               });
               setClassNames(uniqueNames);
