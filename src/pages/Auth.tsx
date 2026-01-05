@@ -35,18 +35,6 @@ const demoAccounts = [
     description: 'Unit: Bola Sepak',
     icon: <User className="w-5 h-5" />
   },
-  { 
-    email: 'guru3@demo.com', 
-    role: 'Guru (Unit Uniform)',
-    description: 'Unit: Pengakap',
-    icon: <User className="w-5 h-5" />
-  },
-  { 
-    email: 'guru5@demo.com', 
-    role: 'Guru (Persatuan & Kelab)',
-    description: 'Unit: Kelab Sains',
-    icon: <User className="w-5 h-5" />
-  },
 ];
 
 const Auth = () => {
